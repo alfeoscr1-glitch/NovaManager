@@ -2,11 +2,11 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Nova Software Manager" Height="850" Width="1320" MinHeight="700" MinWidth="1050"
-        WindowStartupLocation="CenterScreen" Background="#F2F5FA" FontFamily="Segoe UI">
+        WindowStartupLocation="CenterScreen" Background="{DynamicResource ThemeBrush_F2F5FA}" FontFamily="Segoe UI">
     <Window.Resources>
         <Style x:Key="NavButton" TargetType="Button">
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
-            <Setter Property="Foreground" Value="#AEB9CB"/>
+            <Setter Property="Foreground" Value="{DynamicResource ThemeBrush_AEB9CB}"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="FontWeight" Value="Normal"/>
             <Setter Property="Padding" Value="14,11"/>
@@ -19,7 +19,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="NavBorder" Property="Background" Value="#293754"/>
+                                <Setter TargetName="NavBorder" Property="Background" Value="{DynamicResource ThemeBrush_293754}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -27,11 +27,21 @@
             </Setter>
         </Style>
         <Style x:Key="Card" TargetType="Border">
-            <Setter Property="Background" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource ThemeBrush_FFFFFF}"/>
             <Setter Property="CornerRadius" Value="12"/>
             <Setter Property="Padding" Value="20"/>
-            <Setter Property="BorderBrush" Value="#E8ECF3"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBrush_E8ECF3}"/>
             <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style x:Key="AppearanceComboBox" TargetType="ComboBox">
+            <Setter Property="Background" Value="{DynamicResource ThemeBrush_FFFFFF}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ThemeBrush_202A3B}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBrush_E8ECF3}"/>
+            <Setter Property="Padding" Value="10,7"/>
+        </Style>
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="{DynamicResource ThemeBrush_FFFFFF}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ThemeBrush_202A3B}"/>
         </Style>
     </Window.Resources>
 
@@ -41,7 +51,7 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Column="0" Background="#172238">
+        <Border Grid.Column="0" Background="{DynamicResource ThemeBrush_172238}">
             <DockPanel Margin="16">
                 <StackPanel DockPanel.Dock="Top">
                                 <Grid Margin="7,10,0,34">
@@ -50,23 +60,23 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="36"/>
                                     </Grid.ColumnDefinitions>
-                                    <Border Grid.Column="0" Width="36" Height="36" CornerRadius="11" Background="#5669E8">
+                                    <Border Grid.Column="0" Width="36" Height="36" CornerRadius="11" Background="{DynamicResource ThemeBrush_5669E8}">
                                         <TextBlock Text="N" Foreground="White" FontSize="20" FontWeight="Bold"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
                                         <TextBlock Text="NOVA" Foreground="White" FontSize="17" FontWeight="Bold"/>
-                                        <TextBlock Text="SOFTWARE MANAGER" Foreground="#91A0BA" FontSize="9"/>
+                                        <TextBlock Text="SOFTWARE MANAGER" Foreground="{DynamicResource ThemeBrush_91A0BA}" FontSize="9"/>
                                     </StackPanel>
                                     <Button x:Name="SettingsGearButton" Grid.Column="2" Content="⚙" ToolTip="Settings" Click="SettingsNav_Click"
                                             Style="{StaticResource NavButton}" Padding="6,4" FontSize="18"
                                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
                                 </Grid>
-                    <TextBlock Text="WORKSPACE" Foreground="#7888A4" FontSize="10" FontWeight="SemiBold"
+                    <TextBlock Text="WORKSPACE" Foreground="{DynamicResource ThemeBrush_7888A4}" FontSize="10" FontWeight="SemiBold"
                                Margin="8,0,0,8"/>
-                    <Button x:Name="OverviewNavButton" Style="{StaticResource NavButton}" Background="#293754" Foreground="White"
+                    <Button x:Name="OverviewNavButton" Style="{StaticResource NavButton}" Background="{DynamicResource ThemeBrush_293754}" Foreground="White"
                             Click="OverviewNav_Click">
-                        <StackPanel Orientation="Horizontal"><TextBlock Text="◫" Width="27" Foreground="#B9C4FF"/><TextBlock Text="Overview"/></StackPanel>
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="◫" Width="27" Foreground="{DynamicResource ThemeBrush_B9C4FF}"/><TextBlock Text="Overview"/></StackPanel>
                     </Button>
                     <Button x:Name="SoftwareNavButton" Style="{StaticResource NavButton}" Click="SoftwareNav_Click">
                         <StackPanel Orientation="Horizontal"><TextBlock Text="▤" Width="27"/><TextBlock Text="My software"/></StackPanel>
@@ -78,10 +88,10 @@
                         <StackPanel Orientation="Horizontal"><TextBlock Text="▱" Width="27"/><TextBlock Text="Storage &amp; cleanup"/></StackPanel>
                     </Button>
                 </StackPanel>
-                <Border DockPanel.Dock="Bottom" Background="#222F49" CornerRadius="10" Padding="13" Margin="0,0,0,1">
+                <Border DockPanel.Dock="Bottom" Background="{DynamicResource ThemeBrush_222F49}" CornerRadius="10" Padding="13" Margin="0,0,0,1">
                     <StackPanel>
-                        <TextBlock Text="SCAN STATUS" Foreground="#8998B1" FontSize="10" FontWeight="SemiBold"/>
-                        <TextBlock x:Name="LastScanText" Text="Not scanned yet" Foreground="#ECF1FA" FontSize="12" Margin="0,7,0,0"/>
+                        <TextBlock Text="SCAN STATUS" Foreground="{DynamicResource ThemeBrush_8998B1}" FontSize="10" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="LastScanText" Text="Not scanned yet" Foreground="{DynamicResource ThemeBrush_ECF1FA}" FontSize="12" Margin="0,7,0,0"/>
                     </StackPanel>
                 </Border>
             </DockPanel>
@@ -95,9 +105,9 @@
             </Grid.RowDefinitions>
             <Grid Grid.Row="0" Margin="0,0,0,22">
                 <StackPanel>
-                    <TextBlock x:Name="PageTitle" Text="Good morning" FontSize="26" FontWeight="Bold" Foreground="#202A3B"/>
+                    <TextBlock x:Name="PageTitle" Text="Good morning" FontSize="26" FontWeight="Bold" Foreground="{DynamicResource ThemeBrush_202A3B}"/>
                     <TextBlock x:Name="PageSubtitle" Text="Your software at a glance. Updates and cleanup stay in your control."
-                               FontSize="13" Foreground="#7F8BA0" Margin="0,6,0,0"/>
+                               FontSize="13" Foreground="{DynamicResource ThemeBrush_7F8BA0}" Margin="0,6,0,0"/>
                 </StackPanel>
                 <Button x:Name="ScanButton" Content="Scan this PC" HorizontalAlignment="Right" VerticalAlignment="Center"
                         Click="ScanButton_Click" MinWidth="130"/>
@@ -116,20 +126,20 @@
                             <Border CornerRadius="14" Padding="25" Margin="0,0,0,18">
                                 <Border.Background>
                                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                        <GradientStop Color="#5268E8" Offset="0"/>
-                                        <GradientStop Color="#7657DF" Offset="1"/>
+                                        <GradientStop Color="{DynamicResource ThemeColor_5268E8}" Offset="0"/>
+                                        <GradientStop Color="{DynamicResource ThemeColor_7657DF}" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Border.Background>
                                 <Grid>
                                     <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                     <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="UPDATE CHECK" Foreground="#DCE1FF" FontSize="10" FontWeight="Bold"/>
+                                        <TextBlock Text="UPDATE CHECK" Foreground="{DynamicResource ThemeBrush_DCE1FF}" FontSize="10" FontWeight="Bold"/>
                                         <TextBlock x:Name="HeroTitle" Text="Scan for updates outside Microsoft Store"
                                                    Foreground="White" FontSize="21" FontWeight="Bold" Margin="0,10,0,5"/>
                                         <TextBlock Text="Checks for update candidates in the winget source, not the Microsoft Store catalog."
-                                                   Foreground="#E6E8FF" FontSize="12" TextWrapping="Wrap"/>
+                                                   Foreground="{DynamicResource ThemeBrush_E6E8FF}" FontSize="12" TextWrapping="Wrap"/>
                                         <Button Content="Open updates" HorizontalAlignment="Left" Margin="0,17,0,0"
-                                                Background="White" Foreground="#4F5FD0" Click="UpdatesNav_Click"/>
+                                                Background="White" Foreground="{DynamicResource ThemeBrush_4F5FD0}" Click="UpdatesNav_Click"/>
                                     </StackPanel>
                                     <TextBlock Grid.Column="1" Text="⟳" FontSize="53" Foreground="#FFFFFF" Opacity="0.42"
                                                VerticalAlignment="Center" Margin="22,0,10,0"/>
@@ -139,23 +149,23 @@
                             <UniformGrid Columns="3" Margin="0,0,0,18">
                                 <Border Style="{StaticResource Card}" Margin="0,0,8,0">
                                     <StackPanel>
-                                        <TextBlock Text="INSTALLED SOFTWARE" Foreground="#7F8BA0" FontSize="10" FontWeight="SemiBold"/>
-                                        <TextBlock x:Name="InstalledCountText" Text="—" Foreground="#202A3B" FontSize="28" FontWeight="Bold" Margin="0,6,0,0"/>
-                                        <TextBlock Text="apps and games found" Foreground="#98A3B5" FontSize="11"/>
+                                        <TextBlock Text="INSTALLED SOFTWARE" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" FontWeight="SemiBold"/>
+                                        <TextBlock x:Name="InstalledCountText" Text="—" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="28" FontWeight="Bold" Margin="0,6,0,0"/>
+                                        <TextBlock Text="apps and games found" Foreground="{DynamicResource ThemeBrush_98A3B5}" FontSize="11"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Style="{StaticResource Card}" Margin="8,0">
                                     <StackPanel>
-                                        <TextBlock Text="WINGET UPDATES" Foreground="#7F8BA0" FontSize="10" FontWeight="SemiBold"/>
-                                        <TextBlock x:Name="UpdatesCountText" Text="—" Foreground="#202A3B" FontSize="28" FontWeight="Bold" Margin="0,6,0,0"/>
-                                        <TextBlock Text="found in the winget source" Foreground="#98A3B5" FontSize="11"/>
+                                        <TextBlock Text="WINGET UPDATES" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" FontWeight="SemiBold"/>
+                                        <TextBlock x:Name="UpdatesCountText" Text="—" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="28" FontWeight="Bold" Margin="0,6,0,0"/>
+                                        <TextBlock Text="found in the winget source" Foreground="{DynamicResource ThemeBrush_98A3B5}" FontSize="11"/>
                                     </StackPanel>
                                 </Border>
                                 <Border Style="{StaticResource Card}" Margin="8,0,0,0">
                                     <StackPanel>
-                                        <TextBlock Text="TEMP FILES FOUND" Foreground="#7F8BA0" FontSize="10" FontWeight="SemiBold"/>
-                                        <TextBlock x:Name="TempSizeText" Text="—" Foreground="#202A3B" FontSize="28" FontWeight="Bold" Margin="0,6,0,0"/>
-                                        <TextBlock x:Name="TempCountText" Text="Preview before removing" Foreground="#98A3B5" FontSize="11"/>
+                                        <TextBlock Text="TEMP FILES FOUND" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" FontWeight="SemiBold"/>
+                                        <TextBlock x:Name="TempSizeText" Text="—" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="28" FontWeight="Bold" Margin="0,6,0,0"/>
+                                        <TextBlock x:Name="TempCountText" Text="Preview before removing" Foreground="{DynamicResource ThemeBrush_98A3B5}" FontSize="11"/>
                                     </StackPanel>
                                 </Border>
                             </UniformGrid>
@@ -164,9 +174,9 @@
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="1.3*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
                                 <Border Style="{StaticResource Card}" Margin="0,0,9,0">
                                     <StackPanel>
-                                        <TextBlock Text="Updates to review" Foreground="#202A3B" FontSize="16" FontWeight="Bold"/>
+                                        <TextBlock Text="Updates to review" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="16" FontWeight="Bold"/>
                                         <TextBlock x:Name="UpdatesSummaryText" Text="Run a scan to check apps in the winget source."
-                                                   Foreground="#7F8BA0" FontSize="12" Margin="0,6,0,14" TextWrapping="Wrap"/>
+                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,6,0,14" TextWrapping="Wrap"/>
                                         <DataGrid x:Name="OverviewUpdatesGrid" Height="176" ItemsSource="{Binding Updates}"
                                                   HeadersVisibility="None" RowHeight="42">
                                             <DataGrid.Columns>
@@ -178,14 +188,14 @@
                                 </Border>
                                 <Border Grid.Column="1" Style="{StaticResource Card}" Margin="9,0,0,0">
                                     <StackPanel>
-                                        <TextBlock Text="Temporary files" Foreground="#202A3B" FontSize="16" FontWeight="Bold"/>
+                                        <TextBlock Text="Temporary files" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="16" FontWeight="Bold"/>
                                         <TextBlock Text="Scans %TEMP% and the Windows Temp folder. Locked or protected files may be skipped."
-                                                   Foreground="#7F8BA0" FontSize="12" Margin="0,6,0,14" TextWrapping="Wrap"/>
-                                        <Border Background="#F6F8FC" CornerRadius="9" Padding="13">
+                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,6,0,14" TextWrapping="Wrap"/>
+                                        <Border Background="{DynamicResource ThemeBrush_F6F8FC}" CornerRadius="9" Padding="13">
                                             <StackPanel>
-                                                <TextBlock Text="%TEMP% and Windows\Temp" Foreground="#39465B" FontWeight="SemiBold" FontSize="12"/>
+                                                <TextBlock Text="%TEMP% and Windows\Temp" Foreground="{DynamicResource ThemeBrush_39465B}" FontWeight="SemiBold" FontSize="12"/>
                                                 <TextBlock x:Name="TempSummaryText" Text="Run a scan to see the removable file estimate."
-                                                           Foreground="#7F8BA0" FontSize="11" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11" Margin="0,5,0,0" TextWrapping="Wrap"/>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
@@ -199,9 +209,9 @@
                     <Border Style="{StaticResource Card}" Margin="0,10,0,0">
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Top" Margin="0,0,0,14">
-                                <TextBlock Text="Installed apps and games" Foreground="#202A3B" FontSize="18" FontWeight="Bold"/>
+                                <TextBlock Text="Installed apps and games" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="18" FontWeight="Bold"/>
                                 <TextBlock Text="Detected from Windows installed-program records and your Windows app packages."
-                                           Foreground="#7F8BA0" FontSize="12" Margin="0,5,0,0"/>
+                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,5,0,0"/>
                             </StackPanel>
                             <DataGrid ItemsSource="{Binding Software}">
                                 <DataGrid.Columns>
@@ -219,9 +229,9 @@
                     <Border Style="{StaticResource Card}" Margin="0,10,0,0">
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Top" Margin="0,0,0,14">
-                                <TextBlock Text="Updates outside Microsoft Store" Foreground="#202A3B" FontSize="18" FontWeight="Bold"/>
+                                <TextBlock Text="Updates outside Microsoft Store" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="18" FontWeight="Bold"/>
                                 <TextBlock Text="Candidates returned by the winget source, which is separate from the Microsoft Store catalog. Review each app and start its installer explicitly."
-                                           Foreground="#7F8BA0" FontSize="12" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,5,0,0" TextWrapping="Wrap"/>
                             </StackPanel>
                             <DataGrid x:Name="UpdatesGrid" ItemsSource="{Binding Updates}">
                                 <DataGrid.Columns>
@@ -251,9 +261,9 @@
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
                             <StackPanel Grid.Row="0">
-                                <TextBlock Text="Storage &amp; organization" Foreground="#202A3B" FontSize="20" FontWeight="Bold"/>
+                                <TextBlock Text="Storage &amp; organization" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="20" FontWeight="Bold"/>
                                 <TextBlock Text="Explore where space is used. Unknown means needs review, not safe to delete."
-                                           Foreground="#7F8BA0" FontSize="12" Margin="0,7,0,12" TextWrapping="Wrap"/>
+                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,7,0,12" TextWrapping="Wrap"/>
                             </StackPanel>
                             <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
                                 <Button x:Name="TempSectionButton" Content="Temporary files" Style="{StaticResource SecondaryButton}"
@@ -281,20 +291,20 @@
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
                                         <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                                            <TextBlock Text="What are temporary files?" Foreground="#202A3B" FontSize="18" FontWeight="Bold"/>
+                                            <TextBlock Text="What are temporary files?" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="18" FontWeight="Bold"/>
                                             <TextBlock Text="Review the locations and individual files found. Nothing is removed until you choose files and confirm."
-                                                       Foreground="#7F8BA0" FontSize="12" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                                                       Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,5,0,0" TextWrapping="Wrap"/>
                                         </StackPanel>
-                                        <Border Grid.Row="1" Background="#F4F7FF" BorderBrush="#E5EBFA" BorderThickness="1"
+                                        <Border Grid.Row="1" Background="{DynamicResource ThemeBrush_F4F7FF}" BorderBrush="{DynamicResource ThemeBrush_E5EBFA}" BorderThickness="1"
                                                 CornerRadius="10" Padding="13" Margin="0,0,0,12">
                                             <Grid>
                                                 <Grid.ColumnDefinitions><ColumnDefinition Width="38"/><ColumnDefinition/></Grid.ColumnDefinitions>
-                                                <TextBlock Text="ⓘ" FontSize="22" Foreground="#5669E8" VerticalAlignment="Center"/>
+                                                <TextBlock Text="ⓘ" FontSize="22" Foreground="{DynamicResource ThemeBrush_5669E8}" VerticalAlignment="Center"/>
                                                 <StackPanel Grid.Column="1">
-                                                    <TextBlock Text="Cleanup mode" Foreground="#25334A" FontSize="13" FontWeight="Bold"/>
+                                                    <TextBlock Text="Cleanup mode" Foreground="{DynamicResource ThemeBrush_25334A}" FontSize="13" FontWeight="Bold"/>
                                                     <TextBlock x:Name="CleanupModeDescriptionText"
                                                                Text="Safe cleanup shows only user Temp and Windows Temp, the locations this build currently scans."
-                                                               Foreground="#71809A" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                                               Foreground="{DynamicResource ThemeBrush_71809A}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
                                                 </StackPanel>
                                             </Grid>
                                         </Border>
@@ -327,25 +337,25 @@
                                                                           VerticalAlignment="Center" HorizontalAlignment="Center"
                                                                           Click="CleanupCategoryCheckBox_Click"/>
                                                                 <Border Grid.Column="1" Width="29" Height="29" CornerRadius="8"
-                                                                        Background="#EEF2FF" VerticalAlignment="Center">
-                                                                    <TextBlock Text="{Binding Icon}" FontSize="15" Foreground="#596DE0"
+                                                                        Background="{DynamicResource ThemeBrush_EEF2FF}" VerticalAlignment="Center">
+                                                                    <TextBlock Text="{Binding Icon}" FontSize="15" Foreground="{DynamicResource ThemeBrush_596DE0}"
                                                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                                 </Border>
                                                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="7,0">
-                                                                    <TextBlock Text="{Binding Name}" Foreground="#29364B" FontSize="12" FontWeight="SemiBold"/>
-                                                                    <TextBlock Text="{Binding Description}" Foreground="#7F8BA0" FontSize="10"
+                                                                    <TextBlock Text="{Binding Name}" Foreground="{DynamicResource ThemeBrush_29364B}" FontSize="12" FontWeight="SemiBold"/>
+                                                                    <TextBlock Text="{Binding Description}" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10"
                                                                                TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
-                                                                    <TextBlock Text="{Binding Path}" Foreground="#96A1B3" FontSize="9"
+                                                                    <TextBlock Text="{Binding Path}" Foreground="{DynamicResource ThemeBrush_96A1B3}" FontSize="9"
                                                                                TextTrimming="CharacterEllipsis"/>
                                                                 </StackPanel>
                                                                 <StackPanel Grid.Column="3" VerticalAlignment="Center">
-                                                                    <TextBlock Text="Estimated size" Foreground="#929DB0" FontSize="9"/>
-                                                                    <TextBlock Text="{Binding FormattedBytes}" Foreground="#45536A" FontSize="11" FontWeight="SemiBold"/>
-                                                                    <TextBlock Text="{Binding FileCount, StringFormat={}{0:N0} files}" Foreground="#8B97AA" FontSize="9"/>
+                                                                    <TextBlock Text="Estimated size" Foreground="{DynamicResource ThemeBrush_929DB0}" FontSize="9"/>
+                                                                    <TextBlock Text="{Binding FormattedBytes}" Foreground="{DynamicResource ThemeBrush_45536A}" FontSize="11" FontWeight="SemiBold"/>
+                                                                    <TextBlock Text="{Binding FileCount, StringFormat={}{0:N0} files}" Foreground="{DynamicResource ThemeBrush_8B97AA}" FontSize="9"/>
                                                                 </StackPanel>
-                                                                <Border Grid.Column="4" Background="#F0F3F8" CornerRadius="12"
+                                                                <Border Grid.Column="4" Background="{DynamicResource ThemeBrush_F0F3F8}" CornerRadius="12"
                                                                         Padding="8,4" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                                    <TextBlock Text="{Binding Status}" Foreground="#64738A" FontSize="9" FontWeight="SemiBold"/>
+                                                                    <TextBlock Text="{Binding Status}" Foreground="{DynamicResource ThemeBrush_64738A}" FontSize="9" FontWeight="SemiBold"/>
                                                                 </Border>
                                                                 <Button Grid.Column="5" Content="Open folder" Padding="7,6" Tag="{Binding}"
                                                                         IsEnabled="{Binding IsAvailable}" Style="{StaticResource SecondaryButton}"
@@ -359,9 +369,9 @@
                                         <Grid Grid.Row="4" Margin="0,9,0,7">
                                             <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                             <StackPanel>
-                                                <TextBlock Text="Detailed scan results" Foreground="#29364B" FontSize="12" FontWeight="Bold"/>
+                                                <TextBlock Text="Detailed scan results" Foreground="{DynamicResource ThemeBrush_29364B}" FontSize="12" FontWeight="Bold"/>
                                                 <TextBlock x:Name="TempSelectionSummaryText" Text="Scan to list files in supported Temp folders."
-                                                           Foreground="#7F8BA0" FontSize="10" Margin="0,3,0,0"/>
+                                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" Margin="0,3,0,0"/>
                                             </StackPanel>
                                             <Button x:Name="ToggleTempFilesButton" Grid.Column="1" Content="View all files"
                                                     Style="{StaticResource SecondaryButton}" Padding="10,7" Click="ToggleTempFiles_Click"/>
@@ -386,47 +396,47 @@
                                             </DataGrid.Columns>
                                         </DataGrid>
                                         <TextBlock Grid.Row="6" Text="Only the checked files shown in this scan can be removed. Changed, locked, protected, and linked items are skipped. Folders are never deleted."
-                                                   Foreground="#7F8BA0" FontSize="10" Margin="0,9,0,0" TextWrapping="Wrap"/>
+                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" Margin="0,9,0,0" TextWrapping="Wrap"/>
                                     </Grid>
                                     <StackPanel Grid.Column="1">
-                                        <Border Background="White" BorderBrush="#E8ECF3" BorderThickness="1"
+                                        <Border Background="{DynamicResource ThemeBrush_FFFFFF}" BorderBrush="{DynamicResource ThemeBrush_E8ECF3}" BorderThickness="1"
                                                 CornerRadius="12" Padding="16" Margin="0,0,0,12">
                                             <StackPanel>
-                                                <TextBlock Text="Cleanup summary" Foreground="#29364B" FontSize="14" FontWeight="Bold"/>
-                                                <TextBlock x:Name="SelectedTempSizeText" Text="0 B" Foreground="#25334A"
+                                                <TextBlock Text="Cleanup summary" Foreground="{DynamicResource ThemeBrush_29364B}" FontSize="14" FontWeight="Bold"/>
+                                                <TextBlock x:Name="SelectedTempSizeText" Text="0 B" Foreground="{DynamicResource ThemeBrush_25334A}"
                                                            FontSize="26" FontWeight="Bold" Margin="0,11,0,0"/>
-                                                <TextBlock Text="selected to be freed (estimate)" Foreground="#7F8BA0" FontSize="10"/>
+                                                <TextBlock Text="selected to be freed (estimate)" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10"/>
                                                 <Separator Margin="0,12"/>
                                                 <TextBlock x:Name="SelectedTempCountText" Text="0 files · 0 locations selected"
-                                                           Foreground="#58667B" FontSize="11"/>
-                                                <Border Background="#F0F5FF" CornerRadius="8" Padding="10" Margin="0,12,0,0">
+                                                           Foreground="{DynamicResource ThemeBrush_58667B}" FontSize="11"/>
+                                                <Border Background="{DynamicResource ThemeBrush_F0F5FF}" CornerRadius="8" Padding="10" Margin="0,12,0,0">
                                                     <TextBlock Text="Locked or protected files may be skipped. This keeps Windows and running apps stable."
-                                                               Foreground="#617391" FontSize="10" TextWrapping="Wrap"/>
+                                                               Foreground="{DynamicResource ThemeBrush_617391}" FontSize="10" TextWrapping="Wrap"/>
                                                 </Border>
                                             </StackPanel>
                                         </Border>
-                                        <Border Background="White" BorderBrush="#E8ECF3" BorderThickness="1"
+                                        <Border Background="{DynamicResource ThemeBrush_FFFFFF}" BorderBrush="{DynamicResource ThemeBrush_E8ECF3}" BorderThickness="1"
                                                 CornerRadius="12" Padding="16">
                                             <StackPanel>
-                                                <TextBlock Text="Review before removal" Foreground="#29364B" FontSize="14" FontWeight="Bold"/>
+                                                <TextBlock Text="Review before removal" Foreground="{DynamicResource ThemeBrush_29364B}" FontSize="14" FontWeight="Bold"/>
                                                 <TextBlock x:Name="SelectedTempCategoriesText" Text="No categories selected"
-                                                           Foreground="#7F8BA0" FontSize="10" Margin="0,8,0,6"/>
+                                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" Margin="0,8,0,6"/>
                                                 <ItemsControl ItemsSource="{Binding SelectedCleanupCategories}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
                                                             <Grid Margin="0,5">
                                                                 <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                                <TextBlock Text="{Binding Name}" Foreground="#5B6A81" FontSize="10"
+                                                                <TextBlock Text="{Binding Name}" Foreground="{DynamicResource ThemeBrush_5B6A81}" FontSize="10"
                                                                            TextTrimming="CharacterEllipsis"/>
-                                                                <TextBlock Grid.Column="1" Text="{Binding SelectedFormattedBytes}" Foreground="#526078"
+                                                                <TextBlock Grid.Column="1" Text="{Binding SelectedFormattedBytes}" Foreground="{DynamicResource ThemeBrush_526078}"
                                                                            FontSize="10" FontWeight="SemiBold"/>
                                                             </Grid>
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
-                                                <Button x:Name="CleanButton" Content="Remove selected files (0)" Background="#5669E8"
+                                                <Button x:Name="CleanButton" Content="Remove selected files (0)" Background="{DynamicResource ThemeBrush_5669E8}"
                                                         IsEnabled="False" Margin="0,13,0,0" Click="CleanButton_Click"/>
-                                                <TextBlock x:Name="CleanupStatusText" Text="" Foreground="#7F8BA0"
+                                                <TextBlock x:Name="CleanupStatusText" Text="" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
                                                            FontSize="10" Margin="0,9,0,0" TextWrapping="Wrap"/>
                                             </StackPanel>
                                         </Border>
@@ -443,9 +453,9 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <StackPanel Grid.Row="0">
-                                        <TextBlock Text="Browse your PC" Foreground="#202A3B" FontSize="18" FontWeight="Bold"/>
+                                        <TextBlock Text="Browse your PC" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="18" FontWeight="Bold"/>
                                         <TextBlock Text="Read-only folder explorer. Scan lists this location's immediate contents; search looks recursively underneath it. Nothing here can be deleted."
-                                                   Foreground="#7F8BA0" FontSize="12" Margin="0,5,0,10" TextWrapping="Wrap"/>
+                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,5,0,10" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <DockPanel Grid.Row="1" Margin="0,0,0,10">
                                         <Button x:Name="FolderMapScanButton" DockPanel.Dock="Right" Content="Scan folder" Click="ScanFolderMap_Click"
@@ -495,7 +505,7 @@
                                         </DataGrid.Columns>
                                     </DataGrid>
                                     <TextBlock x:Name="StorageMapStatusText" Grid.Row="4" Text="Choose a quick location or type a path, then scan. Search is recursive and read-only."
-                                               Foreground="#7F8BA0" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap"/>
                                 </Grid>
                                 <Grid x:Name="ShortcutsPanel" Visibility="Collapsed">
                                     <Grid.RowDefinitions>
@@ -505,9 +515,9 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <StackPanel Grid.Row="0">
-                                        <TextBlock Text="Games and software shortcuts" Foreground="#202A3B" FontSize="18" FontWeight="Bold"/>
+                                        <TextBlock Text="Games and software shortcuts" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="18" FontWeight="Bold"/>
                                         <TextBlock Text="Choose your shortcuts folder. Nova checks shortcut targets and never moves or deletes shortcuts."
-                                                   Foreground="#7F8BA0" FontSize="12" Margin="0,5,0,10" TextWrapping="Wrap"/>
+                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,5,0,10" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <DockPanel Grid.Row="1" Margin="0,0,0,10">
                                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
@@ -516,7 +526,7 @@
                                             <Button x:Name="ShortcutsScanButton" Content="Scan shortcuts" Click="ScanShortcuts_Click"/>
                                         </StackPanel>
                                         <TextBlock x:Name="ShortcutsFolderPathText" Text="No shortcuts folder selected."
-                                                   VerticalAlignment="Center" Foreground="#53627A" TextTrimming="CharacterEllipsis"/>
+                                                   VerticalAlignment="Center" Foreground="{DynamicResource ThemeBrush_53627A}" TextTrimming="CharacterEllipsis"/>
                                     </DockPanel>
                                     <DataGrid Grid.Row="2" x:Name="ShortcutsGrid" ItemsSource="{Binding Shortcuts}"
                                               SelectionChanged="ShortcutsGrid_SelectionChanged" MinHeight="140">
@@ -536,7 +546,7 @@
                                         </DataGrid.Columns>
                                     </DataGrid>
                                     <TextBlock x:Name="ShortcutsStatusText" Grid.Row="3" Text="Target status is an observation, not a guarantee that the app is installed or working."
-                                               Foreground="#7F8BA0" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap"/>
                                 </Grid>
                             </Grid>
                         </Grid>
@@ -546,14 +556,26 @@
                 <TabItem Header="Settings">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,10,0,12">
+                            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
+                                <StackPanel>
+                                    <TextBlock Text="Appearance" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="19" FontWeight="Bold"/>
+                                    <TextBlock Text="Choose a light or dark look for Nova. Your choice is saved for the next time you open the app."
+                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,6,0,14" TextWrapping="Wrap"/>
+                                    <ComboBox x:Name="AppearanceComboBox" Style="{StaticResource AppearanceComboBox}" Width="180"
+                                              HorizontalAlignment="Left">
+                                        <ComboBoxItem Content="Light"/>
+                                        <ComboBoxItem Content="Dark"/>
+                                    </ComboBox>
+                                </StackPanel>
+                            </Border>
                             <Border Style="{StaticResource Card}">
                                 <StackPanel>
-                                    <TextBlock Text="Application updates" Foreground="#202A3B" FontSize="19" FontWeight="Bold"/>
+                                    <TextBlock Text="Application updates" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="19" FontWeight="Bold"/>
                                     <TextBlock Text="Check Nova’s public GitHub Releases page for a newer version. Updates are downloaded only from the configured NovaManager release and verified against GitHub’s SHA-256 asset digest before installation."
-                                               Foreground="#7F8BA0" FontSize="12" Margin="0,6,0,16" TextWrapping="Wrap"/>
-                                    <TextBlock x:Name="AppVersionText" Foreground="#53627A" FontSize="13" Margin="0,0,0,8"/>
+                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,6,0,16" TextWrapping="Wrap"/>
+                                    <TextBlock x:Name="AppVersionText" Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="13" Margin="0,0,0,8"/>
                                     <TextBlock x:Name="AppUpdateStatusText" Text="Select Check for updates to look for a newer release."
-                                               Foreground="#53627A" FontSize="13" Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                               Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="13" Margin="0,0,0,14" TextWrapping="Wrap"/>
                                     <StackPanel Orientation="Horizontal">
                                         <Button x:Name="CheckAppUpdateButton" Content="Check for updates" Click="CheckAppUpdates_Click"/>
                                         <Button x:Name="InstallAppUpdateButton" Content="Download and install" Click="InstallAppUpdate_Click"
@@ -562,12 +584,12 @@
                                 </StackPanel>
                             </Border>
                             <TextBlock Text="Nova will close during installation and reopen when the update is complete. If automatic replacement is blocked by folder permissions, download the release manually from GitHub."
-                                       Foreground="#7F8BA0" FontSize="11" Margin="4,12,4,0" TextWrapping="Wrap"/>
+                                       Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11" Margin="4,12,4,0" TextWrapping="Wrap"/>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
             </TabControl>
-            <TextBlock x:Name="StatusText" Grid.Row="2" Text="Ready" Foreground="#98A3B4" FontSize="11"
+            <TextBlock x:Name="StatusText" Grid.Row="2" Text="Ready" Foreground="{DynamicResource ThemeBrush_98A3B4}" FontSize="11"
                        Margin="2,12,0,0"/>
         </Grid>
     </Grid>

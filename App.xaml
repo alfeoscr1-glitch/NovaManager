@@ -4,9 +4,9 @@
     <Application.Resources>
         <Color x:Key="AccentColor">#5669E8</Color>
         <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}"/>
-        <SolidColorBrush x:Key="InkBrush" Color="#202A3B"/>
-        <SolidColorBrush x:Key="MutedBrush" Color="#7F8BA0"/>
-        <SolidColorBrush x:Key="LineBrush" Color="#E8ECF3"/>
+        <SolidColorBrush x:Key="InkBrush" Color="{DynamicResource ThemeColor_202A3B}"/>
+        <SolidColorBrush x:Key="MutedBrush" Color="{DynamicResource ThemeColor_7F8BA0}"/>
+        <SolidColorBrush x:Key="LineBrush" Color="{DynamicResource ThemeColor_E8ECF3}"/>
         <Style TargetType="Button">
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="FontSize" Value="13"/>
@@ -36,14 +36,14 @@
             </Setter>
         </Style>
         <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-            <Setter Property="Foreground" Value="#53627A"/>
-            <Setter Property="Background" Value="#F0F3F8"/>
+            <Setter Property="Foreground" Value="{DynamicResource ThemeBrush_53627A}"/>
+            <Setter Property="Background" Value="{DynamicResource ThemeBrush_F0F3F8}"/>
         </Style>
         <Style TargetType="DataGrid">
             <Setter Property="FontFamily" Value="Segoe UI"/>
             <Setter Property="FontSize" Value="13"/>
-            <Setter Property="Foreground" Value="#39465B"/>
-            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{DynamicResource ThemeBrush_39465B}"/>
+            <Setter Property="Background" Value="{DynamicResource ThemeBrush_FFFFFF}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="GridLinesVisibility" Value="None"/>
             <Setter Property="HeadersVisibility" Value="Column"/>
@@ -54,19 +54,19 @@
             <Setter Property="IsReadOnly" Value="True"/>
             <Setter Property="SelectionMode" Value="Single"/>
             <Setter Property="SelectionUnit" Value="FullRow"/>
-            <Setter Property="HorizontalGridLinesBrush" Value="#EFF2F6"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource ThemeBrush_EFF2F6}"/>
             <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
             <Setter Property="AutoGenerateColumns" Value="False"/>
             <Setter Property="ColumnHeaderStyle">
                 <Setter.Value>
                     <Style TargetType="DataGridColumnHeader">
-                        <Setter Property="Background" Value="#F7F8FB"/>
-                        <Setter Property="Foreground" Value="#7F8BA0"/>
+                        <Setter Property="Background" Value="{DynamicResource ThemeBrush_F7F8FB}"/>
+                        <Setter Property="Foreground" Value="{DynamicResource ThemeBrush_7F8BA0}"/>
                         <Setter Property="FontSize" Value="11"/>
                         <Setter Property="FontWeight" Value="SemiBold"/>
                         <Setter Property="Padding" Value="12,0"/>
                         <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                        <Setter Property="BorderBrush" Value="#E8ECF3"/>
+                        <Setter Property="BorderBrush" Value="{DynamicResource ThemeBrush_E8ECF3}"/>
                     </Style>
                 </Setter.Value>
             </Setter>

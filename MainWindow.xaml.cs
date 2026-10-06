@@ -44,6 +44,8 @@ public partial class MainWindow : Window
         };
         AddFolderRootOptions();
         LoadShortcutsFolder();
+        AppearanceComboBox.SelectedIndex = ThemeManager.CurrentTheme == "Dark" ? 1 : 0;
+        AppearanceComboBox.SelectionChanged += AppearanceComboBox_SelectionChanged;
         AppVersionText.Text = $"Installed version: {AppUpdateService.CurrentVersion}";
         ShowStoragePanel(TempCleanupPanel);
         UpdateSectionChrome();
@@ -195,6 +197,25 @@ public partial class MainWindow : Window
 
     private async void CheckAppUpdates_Click(object sender, RoutedEventArgs e) =>
         await CheckForAppUpdatesAsync();
+
+    private void AppearanceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (AppearanceComboBox.SelectedItem is not ComboBoxItem item || item.Content is not string theme)
+        {
+            return;
+        }
+
+        try
+        {
+            ThemeManager.SetTheme(Application.Current, theme);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            MessageBox.Show(this, $"Nova could not save the appearance setting.{Environment.NewLine}{exception.Message}",
+                "Appearance setting could not be saved", MessageBoxButton.OK, MessageBoxImage.Error);
+            AppearanceComboBox.SelectedIndex = ThemeManager.CurrentTheme == "Dark" ? 1 : 0;
+        }
+    }
 
     private async Task CheckForAppUpdatesAsync()
     {

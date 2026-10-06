@@ -26,6 +26,7 @@ public partial class App : Application
             return;
         }
 
+        ThemeManager.Load(this);
         var mainWindow = new MainWindow();
         MainWindow = mainWindow;
         mainWindow.Show();
