@@ -217,6 +217,15 @@ public partial class MainWindow : Window
         }
     }
 
+    public void ShowUpdateReleaseNotes(string releaseName, string version, string releaseNotes)
+    {
+        AppReleaseNotesTitleText.Text = releaseName;
+        AppReleaseNotesText.Text = releaseNotes;
+        AppReleaseNotesPanel.Visibility = Visibility.Visible;
+        MainTabs.SelectedIndex = 2;
+        StatusText.Text = $"Updated to Nova {version}. Release notes are shown below.";
+    }
+
     private async Task CheckForAppUpdatesAsync()
     {
         if (isBusy)
@@ -262,7 +271,7 @@ public partial class MainWindow : Window
             var executablePath = Environment.ProcessPath
                 ?? throw new InvalidOperationException("Nova could not determine its executable path.");
             var stagePath = await AppUpdateService.DownloadAndVerifyAsync(release, CancellationToken.None);
-            AppUpdateInstaller.StartUpdater(stagePath, executablePath, Environment.ProcessId);
+            AppUpdateInstaller.StartUpdater(stagePath, executablePath, Environment.ProcessId, release);
             AppUpdateStatusText.Text = "Update verified. Nova is closing to install it, then will restart.";
             Application.Current.Shutdown();
         }

@@ -25,11 +25,12 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Select next patch version
+      - name: Select release version and changelog
         id: version
         uses: actions/github-script@v7
         with:
           script: |
+            const fs = require('fs');
             const releases = await github.paginate(github.rest.repos.listReleases, {
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -47,22 +48,41 @@ jobs:
               .sort((a, b) =>
                 a.major - b.major || a.minor - b.minor || a.patch - b.patch);
 
-            let next;
-            if (stableVersions.length === 0) {
-              const fs = require('fs');
-              const project = fs.readFileSync('NovaManager.csproj', 'utf8');
-              const match = /<Version>(\d+)\.(\d+)\.(\d+)<\/Version>/.exec(project);
-              if (!match) {
-                throw new Error('No stable GitHub release or three-part project version was found.');
-              }
-              next = { major: Number(match[1]), minor: Number(match[2]), patch: Number(match[3]) + 1 };
-            } else {
-              const latest = stableVersions[stableVersions.length - 1];
-              next = { ...latest, patch: latest.patch + 1 };
+            const project = fs.readFileSync('NovaManager.csproj', 'utf8');
+            const projectMatch = /<Version>(\d+)\.(\d+)\.(\d+)<\/Version>/.exec(project);
+            if (!projectMatch) {
+              throw new Error('A three-part project version is required in NovaManager.csproj.');
+            }
+            const projectVersion = {
+              major: Number(projectMatch[1]),
+              minor: Number(projectMatch[2]),
+              patch: Number(projectMatch[3])
+            };
+            const compare = (a, b) =>
+              a.major - b.major || a.minor - b.minor || a.patch - b.patch;
+            const latest = stableVersions[stableVersions.length - 1];
+            const next = !latest || compare(projectVersion, latest) > 0
+              ? projectVersion
+              : { ...latest, patch: latest.patch + 1 };
+            const version = `${next.major}.${next.minor}.${next.patch}`;
+            const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+            const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const heading = new RegExp(`^##\\s+${escapedVersion}\\s+[—-]\\s+(Feature release|Hotfix)\\s*$`, 'm');
+            const match = heading.exec(changelog);
+            if (!match) {
+              throw new Error(`CHANGELOG.md must contain a "## ${version} — Feature release" or "## ${version} — Hotfix" entry.`);
+            }
+            const section = changelog.slice(match.index + match[0].length);
+            const notes = section.split(/^##\s+/m, 1)[0].trim();
+            if (!notes) {
+              throw new Error(`CHANGELOG.md entry for ${version} is empty.`);
             }
 
-            core.setOutput('version', `${next.major}.${next.minor}.${next.patch}`);
-            core.info(`Next Nova release: v${next.major}.${next.minor}.${next.patch}`);
+            core.setOutput('version', version);
+            core.setOutput('release_type', match[1]);
+            core.setOutput('release_name', `Nova Manager v${version} (${match[1]})`);
+            core.setOutput('notes', notes);
+            core.info(`Next Nova release: v${version} (${match[1]})`);
 
       - name: Publish self-contained Windows executable
         shell: pwsh
@@ -81,6 +101,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_NAME: ${{ steps.version.outputs.release_name }}
+          RELEASE_NOTES: ${{ steps.version.outputs.notes }}
         run: |
           $ErrorActionPreference = "Stop"
           $asset = ".\artifacts\publish\NovaManager.exe"
@@ -90,8 +112,8 @@ jobs:
           $tag = "v$env:VERSION"
           gh release create $tag $asset `
             --repo "${{ github.repository }}" `
-            --title "Nova Manager $tag" `
-            --notes "Automated self-contained Windows x64 release built from commit $env:GITHUB_SHA." `
+            --title "$env:RELEASE_NAME" `
+            --notes "$env:RELEASE_NOTES" `
             --target "$env:GITHUB_SHA"
           if ($LASTEXITCODE -ne 0) {
             throw "GitHub CLI failed to create release $tag."

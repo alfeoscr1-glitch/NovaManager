@@ -32,15 +32,15 @@ public partial class App : Application
         mainWindow.Show();
         if (AppUpdateInstaller.IsCleanupInvocation(e.Args))
         {
-            _ = CleanupUpdateFilesAsync(e.Args);
+            _ = CleanupUpdateFilesAsync(e.Args, mainWindow);
         }
     }
 
-    private static async Task CleanupUpdateFilesAsync(string[] args)
+    private static async Task CleanupUpdateFilesAsync(string[] args, MainWindow mainWindow)
     {
         try
         {
-            await AppUpdateInstaller.CleanupAfterUpdateAsync(args);
+            await AppUpdateInstaller.CleanupAfterUpdateAsync(args, mainWindow);
         }
         catch (Exception exception)
         {

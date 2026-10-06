@@ -15,7 +15,8 @@ A Windows desktop app for reviewing installed software, checking third-party upd
 - A shortcuts view can remember a chosen folder and list `.lnk` names and targets. It never moves or deletes shortcuts.
 - Settings includes a Light/Dark appearance selector. The selection applies immediately and is saved for the next launch.
 - The gear beside Nova Software Manager opens Settings. Check for updates queries the latest stable release from `alfeoscr1-glitch/NovaManager` on GitHub. Nova downloads only the `NovaManager.exe` release asset, verifies it against GitHub's SHA-256 asset digest, then uses a separate helper process to replace and restart the app. The prior executable is retained as a timestamped `.previous-...` backup.
-- A GitHub Actions workflow builds and publishes a new self-contained EXE release on each push to `main`. It increments the patch version automatically from the latest stable release, so no release version edit or manual binary upload is needed for routine updates.
+- After an in-app update, Nova opens the Updates section and displays that release's changelog from GitHub.
+- A GitHub Actions workflow builds and publishes a new self-contained EXE release on each push to `main`. It selects the higher of the project version and next patch version, and requires a matching changelog entry, so no manual binary upload is needed.
 
 ## Build and run
 
@@ -38,11 +39,11 @@ The publish output is under `bin\Release\net8.0-windows\win-x64\publish`. The ex
 
 The updater and workflow use the public repository `alfeoscr1-glitch/NovaManager`. Keep it public so Nova can check releases without a sign-in.
 
-For the initial setup, connect this project to the repository and push its source to the `main` branch. One straightforward way is to use GitHub Desktop: clone `alfeoscr1-glitch/NovaManager`, copy the project source files into the cloned repository, then commit and push them. Include `NovaManager.csproj`, the `.cs` and `.xaml` source files, `AppUpdateService.cs`, `.gitignore`, and `.github\workflows\release.yml`. Do not copy `bin`, `obj`, or the built EXE as source files. On GitHub, open **Settings → Actions → General** and make sure Actions are allowed; under **Workflow permissions**, allow read and write access so the workflow can publish releases. The workflow requests `contents: write` using GitHub's built-in token.
+For the initial setup, connect this project to the repository and push its source to the `main` branch. One straightforward way is to use GitHub Desktop: clone `alfeoscr1-glitch/NovaManager`, copy the project source files into the cloned repository, then commit and push them. Include `NovaManager.csproj`, all `.cs` and `.xaml` source files, `CHANGELOG.md`, `.gitignore`, and `.github\workflows\release.yml`. Do not copy `bin`, `obj`, or the built EXE as source files. On GitHub, open **Settings → Actions → General** and make sure Actions are allowed; under **Workflow permissions**, allow read and write access so the workflow can publish releases. The workflow requests `contents: write` using GitHub's built-in token.
 
-Once the source files and workflow are on the `main` branch, a push to `main` starts a Windows build and publishes the next patch release automatically, based on the latest stable release, with the asset named `NovaManager.exe`. For each future change, commit or upload the changed source files to `main`; GitHub Actions builds and releases the next patch version. Friends with an earlier Nova build use **Settings → Check for updates** to download and install the release. You do not have to send them each new EXE.
+Once the source files and workflow are on the `main` branch, a push to `main` starts a Windows build and publishes a release with the asset named `NovaManager.exe`. For each release, add a `CHANGELOG.md` section for its three-part version. Use `## 1.0.8 — Feature release` for a feature update or `## 1.0.8 — Hotfix` for a small fix. A hotfix is still delivered as a normal versioned patch and self-contained update; its release is clearly labeled as a hotfix. The workflow uses a project version that is ahead of the latest release (for example, 1.0.7); otherwise, it increments the latest stable patch automatically. Friends with an earlier Nova build use **Settings → Check for updates** to install the release. After Nova restarts, it opens **Updates** and shows the release notes. You do not have to send them each new EXE.
 
-If the repository has no stable semantic-version release, the workflow starts from the three-part `<Version>` in `NovaManager.csproj` and increments the patch component. Subsequent releases use the highest stable `vMAJOR.MINOR.PATCH` tag and increment its patch number.
+If the repository has no stable semantic-version release, the workflow uses the three-part `<Version>` in `NovaManager.csproj`. Subsequent releases use a higher project version when supplied, or increment the latest stable patch number.
 
 ## Limitations
 

@@ -8,7 +8,13 @@ using System.Text.Json;
 
 namespace NovaManager;
 
-internal sealed record AppUpdateRelease(Version Version, string Tag, Uri DownloadUri, string Sha256);
+internal sealed record AppUpdateRelease(
+    Version Version,
+    string Tag,
+    string ReleaseName,
+    string ReleaseNotes,
+    Uri DownloadUri,
+    string Sha256);
 
 internal static class AppUpdateService
 {
@@ -46,6 +52,14 @@ internal static class AppUpdateService
 
         var tag = release.GetProperty("tag_name").GetString()
             ?? throw new InvalidDataException("The GitHub release did not include a version tag.");
+        var releaseName = release.GetProperty("name").GetString() ?? $"Nova Manager {tag}";
+        var releaseNotes = release.GetProperty("body").GetString()
+            ?? throw new InvalidDataException($"The GitHub release {tag} did not include its changelog.");
+        if (string.IsNullOrWhiteSpace(releaseNotes) || releaseNotes.Length > 20_000)
+        {
+            throw new InvalidDataException($"The GitHub release {tag} contains an empty or oversized changelog.");
+        }
+
         var versionText = tag.StartsWith('v') || tag.StartsWith('V') ? tag[1..] : tag;
         if (!Version.TryParse(versionText, out var version) || version.Build < 0 || version.Revision >= 0)
         {
@@ -85,7 +99,7 @@ internal static class AppUpdateService
         }
 
         return version > CurrentVersion
-            ? new AppUpdateRelease(version, tag, downloadUri, digest[7..].ToLowerInvariant())
+            ? new AppUpdateRelease(version, tag, releaseName, releaseNotes, downloadUri, digest[7..].ToLowerInvariant())
             : null;
     }
 
@@ -217,6 +231,13 @@ internal static class AppUpdateInstaller
 
         var config = JsonSerializer.Deserialize<UpdateInstallConfig>(await File.ReadAllTextAsync(configPath), JsonOptions)
             ?? throw new InvalidDataException("The update configuration is empty.");
+        if (!Version.TryParse(config.Version, out _) ||
+            string.IsNullOrWhiteSpace(config.ReleaseName) ||
+            string.IsNullOrWhiteSpace(config.ReleaseNotes) ||
+            config.ReleaseNotes.Length > 20_000)
+        {
+            throw new InvalidDataException("The installed update's changelog is missing or invalid.");
+        }
         var targetPath = Path.GetFullPath(config.TargetPath);
         var stagePath = Path.GetFullPath(config.StagePath);
         var executablePath = Path.GetFullPath(Environment.ProcessPath
@@ -282,7 +303,7 @@ internal static class AppUpdateInstaller
         }
     }
 
-    public static async Task CleanupAfterUpdateAsync(string[] args)
+    public static async Task CleanupAfterUpdateAsync(string[] args, MainWindow mainWindow)
     {
         var helperPath = Path.GetFullPath(args[1]);
         var configPath = Path.GetFullPath(args[2]);
@@ -310,6 +331,16 @@ internal static class AppUpdateInstaller
             throw new InvalidDataException("The temporary updater cleanup paths failed Nova's safety checks.");
         }
 
+        var config = JsonSerializer.Deserialize<UpdateInstallConfig>(await File.ReadAllTextAsync(configPath), JsonOptions)
+            ?? throw new InvalidDataException("The update configuration is empty.");
+        if (!Version.TryParse(config.Version, out _) ||
+            string.IsNullOrWhiteSpace(config.ReleaseName) ||
+            string.IsNullOrWhiteSpace(config.ReleaseNotes) ||
+            config.ReleaseNotes.Length > 20_000)
+        {
+            throw new InvalidDataException("The installed update's changelog is missing or invalid.");
+        }
+
         using (var helper = TryGetProcess(helperProcessId))
         {
             if (helper is not null && !await Task.Run(() => helper.WaitForExit(60_000)))
@@ -318,6 +349,7 @@ internal static class AppUpdateInstaller
             }
         }
 
+        mainWindow.ShowUpdateReleaseNotes(config.ReleaseName, config.Version, config.ReleaseNotes);
         File.Delete(configPath);
         File.Delete(helperPath);
         Directory.Delete(updaterDirectory);
@@ -327,7 +359,7 @@ internal static class AppUpdateInstaller
         }
     }
 
-    public static Process StartUpdater(string stagePath, string targetPath, int parentProcessId)
+    public static Process StartUpdater(string stagePath, string targetPath, int parentProcessId, AppUpdateRelease release)
     {
         var updaterDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -342,7 +374,13 @@ internal static class AppUpdateInstaller
             var currentExe = Environment.ProcessPath
                 ?? throw new InvalidOperationException("Nova could not determine its executable path.");
             File.Copy(currentExe, updaterPath);
-            var config = new UpdateInstallConfig(parentProcessId, Path.GetFullPath(targetPath), Path.GetFullPath(stagePath));
+            var config = new UpdateInstallConfig(
+                parentProcessId,
+                Path.GetFullPath(targetPath),
+                Path.GetFullPath(stagePath),
+                release.Version.ToString(3),
+                release.ReleaseName,
+                release.ReleaseNotes);
             File.WriteAllText(configPath, JsonSerializer.Serialize(config, JsonOptions));
             var process = Process.Start(new ProcessStartInfo
             {
@@ -457,5 +495,11 @@ internal static class AppUpdateInstaller
         }
     }
 
-    private sealed record UpdateInstallConfig(int ParentProcessId, string TargetPath, string StagePath);
+    private sealed record UpdateInstallConfig(
+        int ParentProcessId,
+        string TargetPath,
+        string StagePath,
+        string Version,
+        string ReleaseName,
+        string ReleaseNotes);
 }
