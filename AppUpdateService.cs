@@ -373,7 +373,7 @@ internal static class AppUpdateInstaller
 
     private static void ReplaceWithRetry(string stagePath, string targetPath, string backupPath)
     {
-        const int maxAttempts = 10;
+        const int maxAttempts = 30;
         for (var attempt = 1; ; attempt++)
         {
             try
@@ -395,7 +395,7 @@ internal static class AppUpdateInstaller
                         exception);
                 }
 
-                Thread.Sleep(TimeSpan.FromMilliseconds(500));
+                Thread.Sleep(TimeSpan.FromSeconds(1));
             }
         }
     }
