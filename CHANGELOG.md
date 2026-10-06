@@ -1,5 +1,10 @@
 # Nova Manager changelog
 
+## 1.1.0 — Feature release
+
+- Redesigned the whole application with a new top navigation bar, a cleaner page header, and a full-width content layout.
+- Moved the last-scan status into the page header and refreshed navigation, card, and button styling in both Light and Dark modes.
+
 ## 1.0.10 — Hotfix
 
 - Redesigned Settings with a clearer release-notes header and distinct appearance and update sections.

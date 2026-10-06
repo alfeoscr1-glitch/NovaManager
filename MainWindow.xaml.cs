@@ -1161,7 +1161,7 @@ public partial class MainWindow : Window
     private static void SetNavButtonState(Button button, bool selected)
     {
         button.Background = selected ? new System.Windows.Media.SolidColorBrush(
-            System.Windows.Media.Color.FromRgb(41, 55, 84)) : System.Windows.Media.Brushes.Transparent;
+            System.Windows.Media.Color.FromRgb(86, 105, 232)) : System.Windows.Media.Brushes.Transparent;
         button.Foreground = selected ? System.Windows.Media.Brushes.White : new System.Windows.Media.SolidColorBrush(
             System.Windows.Media.Color.FromRgb(174, 185, 203));
     }
