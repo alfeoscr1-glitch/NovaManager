@@ -5,6 +5,16 @@ namespace NovaManager;
 
 internal static class TempCleaner
 {
+    private sealed record CleanupRoot(
+        string Name,
+        string Path,
+        string Description,
+        string Icon,
+        string TrustBoundary,
+        bool IsOptional,
+        string? FilePattern = null,
+        bool Recursive = true);
+
     public static TempScanResult Scan(CancellationToken cancellationToken)
     {
         var folders = new List<TempFolderResult>();
@@ -24,7 +34,7 @@ internal static class TempCleaner
                 var length = file.Length;
                 bytes += length;
                 scannedFiles.Add(new TempFileResult(file.FullName, length, file.LastWriteTimeUtc));
-            }, () => skipped++, errors, cancellationToken);
+            }, root, () => skipped++, errors, cancellationToken);
             folders.Add(new TempFolderResult(root.Name, root.Path, files, bytes, scannedFiles));
         }
 
@@ -45,9 +55,9 @@ internal static class TempCleaner
         {
             cancellationToken.ThrowIfCancellationRequested();
             var root = NormalizePath(scannedFolder.Path);
-            if (!allowedRoots.ContainsKey(root))
+            if (!allowedRoots.TryGetValue(root, out var approvedRoot))
             {
-                errors.Add($"Cleanup stopped for {root}: this folder is not an approved temporary-folder location.");
+                errors.Add($"Cleanup stopped for {root}: this folder is not an approved cleanup location.");
                 continue;
             }
 
@@ -59,9 +69,9 @@ internal static class TempCleaner
 
             try
             {
-                if ((File.GetAttributes(root) & FileAttributes.ReparsePoint) != 0)
+                if (HasReparsePointWithinBoundary(approvedRoot))
                 {
-                    errors.Add($"Cleanup skipped {root}: the folder is now a linked or redirected location.");
+                    errors.Add($"Cleanup skipped {root}: the folder or one of its parent folders is now linked or redirected.");
                     continue;
                 }
             }
@@ -98,7 +108,12 @@ internal static class TempCleaner
         }
     }
 
-    private static IReadOnlyList<(string Name, string Path)> GetRoots(List<string> errors)
+    internal static IReadOnlyList<(string Name, string Path, string Description, string Icon)> GetCleanupLocations() =>
+        GetAllowedRoots().Values
+            .Select(root => (root.Name, root.Path, root.Description, root.Icon))
+            .ToArray();
+
+    private static IReadOnlyList<CleanupRoot> GetRoots(List<string> errors)
     {
         var allowedRoots = GetAllowedRoots();
         var candidates = new[]
@@ -109,7 +124,7 @@ internal static class TempCleaner
             (Name: "Windows temporary folder", Path: Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "Temp"))
         };
 
-        var roots = new Dictionary<string, (string Name, string Path)>(StringComparer.OrdinalIgnoreCase);
+        var roots = new Dictionary<string, CleanupRoot>(StringComparer.OrdinalIgnoreCase);
         foreach (var candidate in candidates)
         {
             if (string.IsNullOrWhiteSpace(candidate.Path))
@@ -127,7 +142,15 @@ internal static class TempCleaner
                     continue;
                 }
 
-                roots.TryAdd(fullPath, (candidate.Name, fullPath));
+                if (allowedRoots.TryGetValue(fullPath, out var approvedRoot))
+                {
+                    roots.TryAdd(fullPath, approvedRoot);
+                }
+                else
+                {
+                    AddError(errors,
+                        $"{fullPath}: not scanned because it is outside Nova's approved temporary and cache locations.");
+                }
             }
             catch (Exception exception) when (exception is ArgumentException or IOException or NotSupportedException)
             {
@@ -139,15 +162,19 @@ internal static class TempCleaner
         {
             if (!Directory.Exists(root.Path))
             {
-                AddError(errors, $"{root.Path}: standard temporary folder was not found.");
+                if (!root.IsOptional)
+                {
+                    AddError(errors, $"{root.Path}: standard temporary folder was not found.");
+                }
+
                 continue;
             }
 
             try
             {
-                if ((File.GetAttributes(root.Path) & FileAttributes.ReparsePoint) != 0)
+                if (HasReparsePointWithinBoundary(root))
                 {
-                    AddError(errors, $"{root.Path}: not scanned because the folder is a linked or redirected location.");
+                    AddError(errors, $"{root.Path}: not scanned because the folder or one of its parent folders is linked or redirected.");
                     continue;
                 }
 
@@ -167,28 +194,90 @@ internal static class TempCleaner
         return roots.Values.ToArray();
     }
 
-    private static Dictionary<string, (string Name, string Path)> GetAllowedRoots()
+    private static Dictionary<string, CleanupRoot> GetAllowedRoots()
     {
-        var roots = new Dictionary<string, (string Name, string Path)>(StringComparer.OrdinalIgnoreCase);
+        var roots = new Dictionary<string, CleanupRoot>(StringComparer.OrdinalIgnoreCase);
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         var windows = Environment.GetFolderPath(Environment.SpecialFolder.Windows);
-        AddAllowedRoot(roots, "User temporary folder", Path.Combine(localAppData, "Temp"));
-        AddAllowedRoot(roots, "Windows temporary folder", Path.Combine(windows, "Temp"));
+        var programData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+        AddAllowedRoot(roots, "User Temp (%TEMP%)", Path.Combine(localAppData, "Temp"),
+            "Files in your user temporary folder.", "▱", localAppData, false);
+        AddAllowedRoot(roots, "Windows Temp", Path.Combine(windows, "Temp"),
+            "Temporary files used by Windows and installed applications.", "⊞", windows, false);
+        AddAllowedRoot(roots, "Internet/web cache", Path.Combine(localAppData, "Microsoft", "Windows", "INetCache"),
+            "Temporary web content cached by Windows.", "◎", localAppData, true);
+        AddAllowedRoot(roots, "Thumbnail cache", Path.Combine(localAppData, "Microsoft", "Windows", "Explorer"),
+            "Explorer thumbnail database files; other Explorer files are left alone.", "▧", localAppData, true,
+            "thumbcache_*.db", false);
+        AddAllowedRoot(roots, "DirectX shader cache", Path.Combine(localAppData, "D3DSCache"),
+            "DirectX shader cache; Windows or apps may rebuild it.", "◇", localAppData, true);
+        AddAllowedRoot(roots, "NVIDIA DirectX shader cache", Path.Combine(localAppData, "NVIDIA", "DXCache"),
+            "NVIDIA DirectX shader cache; it may be rebuilt.", "◇", localAppData, true);
+        AddAllowedRoot(roots, "NVIDIA graphics cache", Path.Combine(localAppData, "NVIDIA", "GLCache"),
+            "NVIDIA graphics cache; it may be rebuilt.", "◇", localAppData, true);
+        AddAllowedRoot(roots, "NVIDIA shader/cache data", Path.Combine(programData, "NVIDIA Corporation", "NV_Cache"),
+            "NVIDIA shader cache; it may be rebuilt.", "◇", programData, true);
+        AddAllowedRoot(roots, "Edge cache", Path.Combine(localAppData, "Microsoft", "Edge", "User Data", "Default", "Cache"),
+            "Close Edge first; cached web content will be downloaded again.", "◉", localAppData, true);
+        AddAllowedRoot(roots, "Chrome cache", Path.Combine(localAppData, "Google", "Chrome", "User Data", "Default", "Cache"),
+            "Close Chrome first; cached web content will be downloaded again.", "◉", localAppData, true);
         return roots;
     }
 
     private static void AddAllowedRoot(
-        Dictionary<string, (string Name, string Path)> roots,
+        Dictionary<string, CleanupRoot> roots,
         string name,
-        string path)
+        string path,
+        string description,
+        string icon,
+        string trustBoundary,
+        bool isOptional,
+        string? filePattern = null,
+        bool recursive = true)
     {
-        if (string.IsNullOrWhiteSpace(path))
+        if (string.IsNullOrWhiteSpace(path) || string.IsNullOrWhiteSpace(trustBoundary))
         {
             return;
         }
 
         var fullPath = NormalizePath(path);
-        roots.TryAdd(fullPath, (name, fullPath));
+        roots.TryAdd(fullPath, new CleanupRoot(
+            name, fullPath, description, icon, NormalizePath(trustBoundary), isOptional, filePattern, recursive));
+    }
+
+    private static bool HasReparsePointWithinBoundary(CleanupRoot root)
+    {
+        var current = root.Path;
+        while (true)
+        {
+            if ((File.GetAttributes(current) & FileAttributes.ReparsePoint) != 0)
+            {
+                return true;
+            }
+
+            if (current.Equals(root.TrustBoundary, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var parent = Path.GetDirectoryName(current);
+            if (string.IsNullOrEmpty(parent) ||
+                !IsWithinDirectory(current, root.TrustBoundary))
+            {
+                return true;
+            }
+
+            current = parent;
+        }
+    }
+
+    private static bool IsWithinDirectory(string path, string directory)
+    {
+        var relative = Path.GetRelativePath(directory, path);
+        return !Path.IsPathRooted(relative) &&
+            relative != ".." &&
+            !relative.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal) &&
+            !relative.StartsWith($"..{Path.AltDirectorySeparatorChar}", StringComparison.Ordinal);
     }
 
     private static string NormalizePath(string path) =>
@@ -197,6 +286,7 @@ internal static class TempCleaner
     private static void Walk(
         string folder,
         Action<FileInfo> onFile,
+        CleanupRoot root,
         Action onSkipped,
         List<string> errors,
         CancellationToken cancellationToken)
@@ -218,9 +308,14 @@ internal static class TempCleaner
 
                     if ((attributes & FileAttributes.Directory) != 0)
                     {
-                        Walk(entry, onFile, onSkipped, errors, cancellationToken);
+                        if (root.Recursive)
+                        {
+                            Walk(entry, onFile, root, onSkipped, errors, cancellationToken);
+                        }
                     }
-                    else
+                    else if (root.FilePattern is null ||
+                             Path.GetFileName(entry).StartsWith("thumbcache_", StringComparison.OrdinalIgnoreCase) &&
+                             Path.GetExtension(entry).Equals(".db", StringComparison.OrdinalIgnoreCase))
                     {
                         var file = new FileInfo(entry);
                         onFile(file);

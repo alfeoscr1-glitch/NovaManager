@@ -23,7 +23,6 @@ public partial class MainWindow : Window
     private bool isLoadingLatestReleaseNotes;
     private bool isUpdatingTempSelection;
     private bool showTempFileDetails;
-    private string cleanupMode = "Safe";
     private string? shortcutsFolder;
     private readonly Stack<string> folderMapHistory = new();
     private CancellationTokenSource? folderSearchCancellation;
@@ -406,36 +405,36 @@ public partial class MainWindow : Window
 
     private void BuildCleanupCategories(IReadOnlyList<TempFolderResult> scannedFolders)
     {
-        var userTemp = scannedFolders.FirstOrDefault(folder =>
-            folder.Name.Contains("User", StringComparison.OrdinalIgnoreCase) ||
-            folder.Path.Equals(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Temp"),
-                StringComparison.OrdinalIgnoreCase));
-        var windowsTemp = scannedFolders.FirstOrDefault(folder =>
-            folder.Name.Contains("Windows", StringComparison.OrdinalIgnoreCase));
-
-        AddScannedCategory(
-            "User Temp (%TEMP%)",
-            "Files in your user temporary folder. Review the file list before removal.",
-            "▱",
-            userTemp);
-        AddScannedCategory(
-            "Windows Temp",
-            "Temporary files used by Windows and installed applications.",
-            "⊞",
-            windowsTemp);
+        foreach (var location in TempCleaner.GetCleanupLocations())
+        {
+            var folder = scannedFolders.FirstOrDefault(scanned =>
+                scanned.Path.Equals(location.Path, StringComparison.OrdinalIgnoreCase));
+            AddScannedCategory(location.Name, location.Description, location.Icon, location.Path, folder);
+        }
     }
 
-    private void AddScannedCategory(string name, string description, string icon, TempFolderResult? folder)
+    private void AddScannedCategory(
+        string name,
+        string description,
+        string icon,
+        string approvedPath,
+        TempFolderResult? folder)
     {
         var available = folder is not null;
-        var path = folder?.Path ?? "Not found in the last scan";
+        var path = folder?.Path ?? approvedPath;
+        var files = folder?.ScannedFiles ?? Array.Empty<TempFileResult>();
+        foreach (var file in files)
+        {
+            file.IsSelected = true;
+        }
+
         cleanupCategories.Add(new TempCleanupCategory(
             name,
             icon,
             description,
             path,
-            folder?.ScannedFiles ?? Array.Empty<TempFileResult>(),
-            available ? (folder!.Files == 0 ? "No files found" : "Scanned") : "Not found",
+            files,
+            available ? (folder!.Files == 0 ? "No files found" : "Scanned") : "Location not found",
             available));
     }
 
@@ -518,16 +517,16 @@ public partial class MainWindow : Window
 
         var selectedBytes = selectedFiles.Sum(file => file.Bytes);
         var answer = MessageBox.Show(this,
-            $"Remove only the {selectedFiles.Length:N0} checked file(s) ({FormatBytes(selectedBytes)})?{Environment.NewLine}{Environment.NewLine}" +
+            $"Clean up the {selectedFiles.Length:N0} checked file(s) ({FormatBytes(selectedBytes)})?{Environment.NewLine}{Environment.NewLine}" +
             $"{folderDetails}{Environment.NewLine}{Environment.NewLine}{filePreview}{Environment.NewLine}{Environment.NewLine}" +
-            "Only checked files recorded by this scan are attempted. Files that changed since the scan, locked or protected files, and linked items are skipped. Folders are never removed.",
-            "Confirm temporary-file cleanup", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            "Only checked files recorded by this scan are attempted. Close Edge or Chrome first to allow more browser-cache files to be removed. Files that changed since the scan, locked or protected files, and linked items are skipped. Folders are never removed.",
+            "Confirm cleanup", MessageBoxButton.YesNo, MessageBoxImage.Warning);
         if (answer != MessageBoxResult.Yes)
         {
             return;
         }
 
-        SetBusy(true, "Removing selected temporary files…");
+        SetBusy(true, "Cleaning up selected files…");
         try
         {
             var selectedPaths = selectedFiles.Select(file => file.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -541,7 +540,7 @@ public partial class MainWindow : Window
             var result = await Task.Run(() => TempCleaner.RemoveContents(selectedFolders, CancellationToken.None));
             CleanupStatusText.Text =
                 $"Removed {result.DeletedFiles:N0} files ({FormatBytes(result.DeletedBytes)}). {result.Skipped:N0} item(s) were skipped.";
-            StatusText.Text = "Selected-file cleanup finished.";
+            StatusText.Text = "File cleanup finished.";
 
             var freshScan = await Task.Run(() => TempCleaner.Scan(CancellationToken.None));
             SetTempScan(freshScan);
@@ -601,14 +600,14 @@ public partial class MainWindow : Window
         }
 
         TempSelectionSummaryText.Text = tempFiles.Count == 0
-            ? "Scan to list files in supported Temp folders."
+            ? "Scan to review supported temporary and cache locations."
             : $"{selected.Length:N0} of {tempFiles.Count:N0} file(s) selected · {FormatBytes(totalBytes)} selected.";
         SelectedTempSizeText.Text = FormatBytes(totalBytes);
         SelectedTempCountText.Text = $"{selected.Length:N0} files · {selectedCleanupCategories.Count:N0} locations selected";
         SelectedTempCategoriesText.Text = selectedCleanupCategories.Count == 0
             ? "No categories selected"
             : $"{selected.Length:N0} file(s) selected from {selectedCleanupCategories.Count:N0} location(s)";
-        CleanButton.Content = $"Remove selected files ({selected.Length:N0})";
+        CleanButton.Content = "Cleanup files";
         CleanButton.IsEnabled = !isBusy && selected.Length > 0;
         isUpdatingTempSelection = false;
     }
@@ -649,37 +648,6 @@ public partial class MainWindow : Window
     }
 
     private static void SetStorageSectionButtonState(Button button, bool isSelected)
-    {
-        button.Background = isSelected
-            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(86, 105, 232))
-            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(240, 243, 248));
-        button.Foreground = isSelected
-            ? System.Windows.Media.Brushes.White
-            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(83, 98, 122));
-    }
-
-    private void CleanupMode_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button { Tag: string mode })
-        {
-            return;
-        }
-
-        cleanupMode = mode;
-        var description = mode switch
-        {
-            "Safe" => "Safe cleanup shows only user Temp and Windows Temp, the locations currently scanned by this build.",
-            "Standard" => "Standard mode is a UI preview in this build. Scanning and removal remain limited to the user Temp and Windows Temp locations below.",
-            "Advanced" => "Advanced mode is a UI preview in this build. It does not add locations; only scanned files in user Temp and Windows Temp can be selected.",
-            _ => "Only locations shown as scanned are available for selection."
-        };
-        CleanupModeDescriptionText.Text = description;
-        SetCleanupModeButtonState(SafeCleanupModeButton, mode == "Safe");
-        SetCleanupModeButtonState(StandardCleanupModeButton, mode == "Standard");
-        SetCleanupModeButtonState(AdvancedCleanupModeButton, mode == "Advanced");
-    }
-
-    private static void SetCleanupModeButtonState(Button button, bool isSelected)
     {
         button.Background = isSelected
             ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(86, 105, 232))

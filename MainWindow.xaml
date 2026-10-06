@@ -38,6 +38,47 @@
             <Setter Property="Foreground" Value="{DynamicResource ThemeBrush_202A3B}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource ThemeBrush_E8ECF3}"/>
             <Setter Property="Padding" Value="10,7"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource ThemeBrush_202A3B}"/>
+            <Setter Property="ItemContainerStyle">
+                <Setter.Value>
+                    <Style TargetType="ComboBoxItem">
+                        <Setter Property="Foreground" Value="{DynamicResource ThemeBrush_202A3B}"/>
+                        <Setter Property="Background" Value="{DynamicResource ThemeBrush_FFFFFF}"/>
+                        <Setter Property="Padding" Value="8,6"/>
+                    </Style>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CleanupCheckBox" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid Background="Transparent" MinWidth="20" MinHeight="20">
+                            <Border x:Name="CheckBoxBorder" Width="18" Height="18" CornerRadius="4"
+                                    Background="{DynamicResource ThemeBrush_FFFFFF}"
+                                    BorderBrush="{DynamicResource ThemeBrush_7F8BA0}" BorderThickness="1"
+                                    HorizontalAlignment="Left" VerticalAlignment="Center">
+                                <Path x:Name="CheckMark" Data="M 3,9 L 7,13 L 15,4" Stroke="White"
+                                      StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                      Visibility="Collapsed"/>
+                            </Border>
+                            <ContentPresenter Margin="24,0,0,0" VerticalAlignment="Center"
+                                              RecognizesAccessKey="True"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckBoxBorder" Property="Background" Value="{DynamicResource ThemeBrush_5669E8}"/>
+                                <Setter TargetName="CheckBoxBorder" Property="BorderBrush" Value="{DynamicResource ThemeBrush_5669E8}"/>
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style TargetType="ComboBoxItem">
             <Setter Property="Background" Value="{DynamicResource ThemeBrush_FFFFFF}"/>
@@ -289,15 +330,14 @@
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="*"/>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="*"/>
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
                                         <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                                            <TextBlock Text="What are temporary files?" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="18" FontWeight="Bold"/>
-                                            <TextBlock Text="Review the locations and individual files found. Nothing is removed until you choose files and confirm."
+                                            <TextBlock Text="Temporary files and caches" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="18" FontWeight="Bold"/>
+                                            <TextBlock Text="Scan the listed Windows, graphics, and browser-cache locations. Select the files or locations you want, then confirm Cleanup files."
                                                        Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,5,0,0" TextWrapping="Wrap"/>
                                         </StackPanel>
                                         <Border Grid.Row="1" Background="{DynamicResource ThemeBrush_F4F7FF}" BorderBrush="{DynamicResource ThemeBrush_E5EBFA}" BorderThickness="1"
@@ -306,23 +346,14 @@
                                                 <Grid.ColumnDefinitions><ColumnDefinition Width="38"/><ColumnDefinition/></Grid.ColumnDefinitions>
                                                 <TextBlock Text="ⓘ" FontSize="22" Foreground="{DynamicResource ThemeBrush_5669E8}" VerticalAlignment="Center"/>
                                                 <StackPanel Grid.Column="1">
-                                                    <TextBlock Text="Cleanup mode" Foreground="{DynamicResource ThemeBrush_25334A}" FontSize="13" FontWeight="Bold"/>
-                                                    <TextBlock x:Name="CleanupModeDescriptionText"
-                                                               Text="Safe cleanup shows only user Temp and Windows Temp, the locations this build currently scans."
+                                                    <TextBlock Text="Cleanup files" Foreground="{DynamicResource ThemeBrush_25334A}" FontSize="13" FontWeight="Bold"/>
+                                                    <TextBlock Text="Only checked files from these approved locations are removed. Browser caches may be in use until Edge or Chrome is closed."
                                                                Foreground="{DynamicResource ThemeBrush_71809A}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
                                                 </StackPanel>
                                             </Grid>
                                         </Border>
-                                        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,0,0,10">
-                                            <Button x:Name="SafeCleanupModeButton" Content="Safe cleanup" Click="CleanupMode_Click"
-                                                    Tag="Safe" Padding="14,9" Margin="0,0,8,0"/>
-                                            <Button x:Name="StandardCleanupModeButton" Content="Standard cleanup" Style="{StaticResource SecondaryButton}"
-                                                    Click="CleanupMode_Click" Tag="Standard" Padding="14,9" Margin="0,0,8,0"/>
-                                            <Button x:Name="AdvancedCleanupModeButton" Content="Advanced cleanup" Style="{StaticResource SecondaryButton}"
-                                                    Click="CleanupMode_Click" Tag="Advanced" Padding="14,9"/>
-                                        </StackPanel>
-                                        <DataGrid Grid.Row="3" x:Name="CleanupCategoriesGrid" ItemsSource="{Binding CleanupCategories}"
-                                                  HeadersVisibility="None" MinHeight="180" RowHeight="66"
+                                        <DataGrid Grid.Row="2" x:Name="CleanupCategoriesGrid" ItemsSource="{Binding CleanupCategories}"
+                                                  HeadersVisibility="None" MinHeight="180" RowHeight="72"
                                                   SelectionUnit="FullRow" SelectionMode="Single">
                                             <DataGrid.Columns>
                                                 <DataGridTemplateColumn Width="*">
@@ -340,6 +371,7 @@
                                                                 <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                           IsEnabled="{Binding IsSelectedAllowed}" Tag="{Binding}"
                                                                           VerticalAlignment="Center" HorizontalAlignment="Center"
+                                                                          Style="{StaticResource CleanupCheckBox}"
                                                                           Click="CleanupCategoryCheckBox_Click"/>
                                                                 <Border Grid.Column="1" Width="29" Height="29" CornerRadius="8"
                                                                         Background="{DynamicResource ThemeBrush_EEF2FF}" VerticalAlignment="Center">
@@ -347,16 +379,16 @@
                                                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                                 </Border>
                                                                 <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="7,0">
-                                                                    <TextBlock Text="{Binding Name}" Foreground="{DynamicResource ThemeBrush_29364B}" FontSize="12" FontWeight="SemiBold"/>
-                                                                    <TextBlock Text="{Binding Description}" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10"
+                                                                    <TextBlock Text="{Binding Name}" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="12" FontWeight="SemiBold"/>
+                                                                    <TextBlock Text="{Binding Description}" Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="10"
                                                                                TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
-                                                                    <TextBlock Text="{Binding Path}" Foreground="{DynamicResource ThemeBrush_96A1B3}" FontSize="9"
+                                                                    <TextBlock Text="{Binding Path}" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="9"
                                                                                TextTrimming="CharacterEllipsis"/>
                                                                 </StackPanel>
                                                                 <StackPanel Grid.Column="3" VerticalAlignment="Center">
-                                                                    <TextBlock Text="Estimated size" Foreground="{DynamicResource ThemeBrush_929DB0}" FontSize="9"/>
-                                                                    <TextBlock Text="{Binding FormattedBytes}" Foreground="{DynamicResource ThemeBrush_45536A}" FontSize="11" FontWeight="SemiBold"/>
-                                                                    <TextBlock Text="{Binding FileCount, StringFormat={}{0:N0} files}" Foreground="{DynamicResource ThemeBrush_8B97AA}" FontSize="9"/>
+                                                                    <TextBlock Text="Estimated size" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="9"/>
+                                                                    <TextBlock Text="{Binding FormattedBytes}" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="11" FontWeight="SemiBold"/>
+                                                                    <TextBlock Text="{Binding FileCount, StringFormat={}{0:N0} files}" Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="9"/>
                                                                 </StackPanel>
                                                                 <Border Grid.Column="4" Background="{DynamicResource ThemeBrush_F0F3F8}" CornerRadius="12"
                                                                         Padding="8,4" VerticalAlignment="Center" HorizontalAlignment="Center">
@@ -374,14 +406,14 @@
                                         <Grid Grid.Row="4" Margin="0,9,0,7">
                                             <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                             <StackPanel>
-                                                <TextBlock Text="Detailed scan results" Foreground="{DynamicResource ThemeBrush_29364B}" FontSize="12" FontWeight="Bold"/>
-                                                <TextBlock x:Name="TempSelectionSummaryText" Text="Scan to list files in supported Temp folders."
+                                                <TextBlock Text="Detailed scan results" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="12" FontWeight="Bold"/>
+                                                <TextBlock x:Name="TempSelectionSummaryText" Text="Scan to review supported temporary and cache locations."
                                                            Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" Margin="0,3,0,0"/>
                                             </StackPanel>
                                             <Button x:Name="ToggleTempFilesButton" Grid.Column="1" Content="View all files"
                                                     Style="{StaticResource SecondaryButton}" Padding="10,7" Click="ToggleTempFiles_Click"/>
                                         </Grid>
-                                        <DataGrid Grid.Row="5" x:Name="TempFilesGrid" ItemsSource="{Binding TempFiles}"
+                                        <DataGrid Grid.Row="4" x:Name="TempFilesGrid" ItemsSource="{Binding TempFiles}"
                                                   MinHeight="90" EnableRowVirtualization="True" VirtualizingPanel.VirtualizationMode="Recycling"
                                                   SelectionUnit="FullRow" SelectionMode="Single"
                                                   Visibility="Collapsed">
@@ -391,6 +423,7 @@
                                                         <DataTemplate>
                                                             <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                       Tag="{Binding}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                      Style="{StaticResource CleanupCheckBox}"
                                                                       Click="TempFileCheckBox_Click"/>
                                                         </DataTemplate>
                                                     </DataGridTemplateColumn.CellTemplate>
@@ -400,7 +433,7 @@
                                                 <DataGridTextColumn Header="LAST MODIFIED" Binding="{Binding LastWriteTimeUtc, StringFormat={}{0:g}}" Width="125"/>
                                             </DataGrid.Columns>
                                         </DataGrid>
-                                        <TextBlock Grid.Row="6" Text="Only the checked files shown in this scan can be removed. Changed, locked, protected, and linked items are skipped. Folders are never deleted."
+                                        <TextBlock Grid.Row="5" Text="Only checked files shown in this scan can be removed. Changed, locked, protected, and linked items are skipped. Folders are never deleted."
                                                    Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" Margin="0,9,0,0" TextWrapping="Wrap"/>
                                     </Grid>
                                     <StackPanel Grid.Column="1">
@@ -439,7 +472,7 @@
                                                         </DataTemplate>
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
-                                                <Button x:Name="CleanButton" Content="Remove selected files (0)" Background="{DynamicResource ThemeBrush_5669E8}"
+                                                <Button x:Name="CleanButton" Content="Cleanup files" Background="{DynamicResource ThemeBrush_5669E8}"
                                                         IsEnabled="False" Margin="0,13,0,0" Click="CleanButton_Click"/>
                                                 <TextBlock x:Name="CleanupStatusText" Text="" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
                                                            FontSize="10" Margin="0,9,0,0" TextWrapping="Wrap"/>

@@ -1,5 +1,12 @@
 # Nova Manager changelog
 
+## 1.1.1 — Hotfix
+
+- Replaced the Safe, Standard, and Advanced cleanup mode previews with one Cleanup files action.
+- Added user and Windows Temp, Windows web and thumbnail caches, DirectX and NVIDIA caches, and Edge/Chrome browser caches to the reviewed cleanup scan.
+- Made cleanup rows and checkboxes easier to read in Dark mode and made the Light/Dark selection text visible.
+- Cleanup scans include all found files by default; review the checked locations and confirm before removal. Thumbnail cleanup targets only `thumbcache_*.db` files.
+
 ## 1.1.0 — Feature release
 
 - Redesigned the whole application with a new top navigation bar, a cleaner page header, and a full-width content layout.
