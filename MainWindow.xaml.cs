@@ -4,6 +4,11 @@ using System.IO;
 using Microsoft.Win32;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
+using Application = System.Windows.Application;
+using Button = System.Windows.Controls.Button;
+using CheckBox = System.Windows.Controls.CheckBox;
+using MessageBox = System.Windows.MessageBox;
 
 namespace NovaManager;
 
@@ -17,6 +22,8 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<TempCleanupCategory> selectedCleanupCategories = new();
     private readonly ObservableCollection<StorageEntryInfo> storageFolders = new();
     private readonly ObservableCollection<ShortcutInfo> shortcuts = new();
+    private readonly UpdateNotificationService updateNotificationService = new();
+    private readonly DispatcherTimer updateCheckTimer = new() { Interval = TimeSpan.FromMinutes(10) };
     private AppUpdateRelease? availableAppUpdate;
     private TempScanResult? lastTempScan;
     private bool isBusy;
@@ -51,8 +58,27 @@ public partial class MainWindow : Window
         ShowLatestReleaseNotes(bundledNotes);
         LatestReleaseNotesStatusText.Text = "Showing changelog bundled with this version. Checking GitHub for the latest release…";
         Loaded += async (_, _) => await RefreshLatestReleaseNotesAsync();
+        Loaded += MainWindow_Loaded;
+        Closed += (_, _) =>
+        {
+            updateCheckTimer.Stop();
+            updateNotificationService.Dispose();
+        };
+        updateNotificationService.NotificationClicked += (_, _) => Dispatcher.BeginInvoke(() =>
+        {
+            WindowState = WindowState.Normal;
+            Activate();
+            MainTabs.SelectedIndex = 4;
+        });
+        updateCheckTimer.Tick += UpdateCheckTimer_Tick;
         ShowStoragePanel(TempCleanupPanel);
         UpdateSectionChrome();
+    }
+
+    private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        updateCheckTimer.Start();
+        await CheckLiveUpdateAvailabilityAsync();
     }
 
     private async void ScanButton_Click(object sender, RoutedEventArgs e)
@@ -279,10 +305,7 @@ public partial class MainWindow : Window
         SetBusy(true, "Checking Nova updates…");
         try
         {
-            availableAppUpdate = await AppUpdateService.CheckAsync(CancellationToken.None);
-            AppUpdateStatusText.Text = availableAppUpdate is null
-                ? $"You’re up to date. Installed version: {AppUpdateService.CurrentVersion}."
-                : $"Version {availableAppUpdate.Version} is available (release {availableAppUpdate.Tag}). Download it when you’re ready.";
+            await RefreshUpdateAvailabilityAsync();
         }
         catch (Exception exception)
         {
@@ -293,6 +316,53 @@ public partial class MainWindow : Window
         finally
         {
             SetBusy(false, AppUpdateStatusText.Text);
+        }
+    }
+
+    private async void UpdateCheckTimer_Tick(object? sender, EventArgs e)
+    {
+        if (isBusy)
+        {
+            return;
+        }
+
+        await CheckLiveUpdateAvailabilityAsync();
+    }
+
+    private async Task CheckLiveUpdateAvailabilityAsync()
+    {
+        try
+        {
+            await RefreshUpdateAvailabilityAsync();
+        }
+        catch (Exception exception)
+        {
+            AppUpdateStatusText.Text = $"Live update check failed: {exception.Message}";
+            StatusText.Text = "Could not refresh Nova update availability.";
+        }
+    }
+
+    private async Task RefreshUpdateAvailabilityAsync()
+    {
+        var updateTask = AppUpdateService.CheckAsync(CancellationToken.None);
+        var missedCountTask = AppUpdateService.GetMissedReleaseCountAsync(CancellationToken.None);
+        await Task.WhenAll(updateTask, missedCountTask);
+
+        availableAppUpdate = await updateTask;
+        var missedCount = await missedCountTask;
+        UpdateBadgeText.Text = missedCount > 99 ? "+99" : $"+{missedCount}";
+        UpdateBadgeBorder.Visibility = missedCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        SettingsGearButton.ToolTip = missedCount == 0
+            ? "Settings"
+            : $"Settings — {missedCount} Nova update{(missedCount == 1 ? string.Empty : "s")} available";
+        InstallAppUpdateButton.IsEnabled = availableAppUpdate is not null;
+        AppUpdateStatusText.Text = availableAppUpdate is null
+            ? $"You’re up to date. Installed version: {AppUpdateService.CurrentVersion}."
+            : $"Version {availableAppUpdate.Version} is available (release {availableAppUpdate.Tag}). Download it when you’re ready.";
+
+        if (availableAppUpdate is not null)
+        {
+            updateNotificationService.NotifyIfNew(availableAppUpdate);
         }
     }
 

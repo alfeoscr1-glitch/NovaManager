@@ -22,6 +22,7 @@ internal sealed record AppReleaseNotes(Version Version, string Tag, string Relea
 internal static class AppUpdateService
 {
     private const string ReleaseApiUrl = "https://api.github.com/repos/alfeoscr1-glitch/NovaManager/releases/latest";
+    private const string ReleasesApiUrl = "https://api.github.com/repos/alfeoscr1-glitch/NovaManager/releases?per_page=100";
     private const string AssetName = "NovaManager.exe";
     private const long MaximumDownloadBytes = 512L * 1024 * 1024;
     private static string LocalUpdatesDirectory => Path.Combine(
@@ -124,6 +125,40 @@ internal static class AppUpdateService
         var releaseName = release.GetProperty("name").GetString() ?? $"Nova Manager {tag}";
         var notes = GetReleaseNotes(release.GetProperty("body").GetString(), version);
         return new AppReleaseNotes(version, tag, releaseName, notes);
+    }
+
+    public static async Task<int> GetMissedReleaseCountAsync(CancellationToken cancellationToken)
+    {
+        using var response = await Client.GetAsync(
+            ReleasesApiUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStreamAsync(cancellationToken));
+        if (document.RootElement.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidDataException("GitHub returned an invalid release list.");
+        }
+
+        return document.RootElement.EnumerateArray().Count(release =>
+        {
+            if (release.TryGetProperty("draft", out var draft) && draft.GetBoolean() ||
+                release.TryGetProperty("prerelease", out var prerelease) && prerelease.GetBoolean() ||
+                !release.TryGetProperty("tag_name", out var tagElement))
+            {
+                return false;
+            }
+
+            var tag = tagElement.GetString();
+            if (string.IsNullOrWhiteSpace(tag))
+            {
+                return false;
+            }
+
+            var versionText = tag.StartsWith('v') || tag.StartsWith('V') ? tag[1..] : tag;
+            return Version.TryParse(versionText, out var version) &&
+                version.Build >= 0 &&
+                version.Revision < 0 &&
+                version > CurrentVersion;
+        });
     }
 
     public static AppReleaseNotes GetBundledReleaseNotes(Version version)

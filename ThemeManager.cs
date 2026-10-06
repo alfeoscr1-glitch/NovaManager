@@ -1,6 +1,10 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
+using Application = System.Windows.Application;
+using Color = System.Windows.Media.Color;
+using ColorConverter = System.Windows.Media.ColorConverter;
+using MessageBox = System.Windows.MessageBox;
 
 namespace NovaManager;
 

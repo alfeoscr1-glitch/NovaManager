@@ -1,5 +1,11 @@
 # Nova Manager changelog
 
+## 1.2.0 — Feature release
+
+- Added live checks for Nova updates while the app is running, with a Windows notification when a new release is detected.
+- Added a numbered badge to Settings showing how many stable Nova releases are newer than the installed version.
+- Update notifications are suppressed after the same release has already been announced; open Settings to download and install an available update.
+
 ## 1.1.1 — Hotfix
 
 - Replaced the Safe, Standard, and Advanced cleanup mode previews with one Cleanup files action.

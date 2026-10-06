@@ -124,9 +124,20 @@
                         <StackPanel Orientation="Horizontal"><TextBlock Text="▱" Width="22"/><TextBlock Text="Storage &amp; cleanup"/></StackPanel>
                     </Button>
                 </StackPanel>
-                <Button x:Name="SettingsGearButton" Grid.Column="2" Content="⚙" ToolTip="Settings" Click="SettingsNav_Click"
-                        Style="{StaticResource NavButton}" Padding="10,6" FontSize="18" VerticalAlignment="Center"
-                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                <Button x:Name="SettingsGearButton" Grid.Column="2" ToolTip="Settings" Click="SettingsNav_Click"
+                        Style="{StaticResource NavButton}" Padding="5,4" VerticalAlignment="Center"
+                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                    <Grid MinWidth="40" MinHeight="38">
+                        <TextBlock Text="⚙" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border x:Name="UpdateBadgeBorder" Background="#D84C5A" BorderBrush="{DynamicResource ThemeBrush_172238}"
+                                BorderThickness="1" CornerRadius="9" MinWidth="20" Height="18"
+                                HorizontalAlignment="Right" VerticalAlignment="Top" Padding="4,0"
+                                Visibility="Collapsed">
+                            <TextBlock x:Name="UpdateBadgeText" Foreground="White" FontSize="10" FontWeight="Bold"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </Grid>
+                </Button>
             </Grid>
         </Border>
 
