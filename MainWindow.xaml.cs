@@ -20,6 +20,7 @@ public partial class MainWindow : Window
     private AppUpdateRelease? availableAppUpdate;
     private TempScanResult? lastTempScan;
     private bool isBusy;
+    private bool isLoadingLatestReleaseNotes;
     private bool isUpdatingTempSelection;
     private bool showTempFileDetails;
     private string cleanupMode = "Safe";
@@ -47,6 +48,10 @@ public partial class MainWindow : Window
         AppearanceComboBox.SelectedIndex = ThemeManager.CurrentTheme == "Dark" ? 1 : 0;
         AppearanceComboBox.SelectionChanged += AppearanceComboBox_SelectionChanged;
         AppVersionText.Text = $"Installed version: {AppUpdateService.CurrentVersion}";
+        var bundledNotes = AppUpdateService.GetBundledReleaseNotes(AppUpdateService.CurrentVersion);
+        ShowLatestReleaseNotes(bundledNotes);
+        LatestReleaseNotesStatusText.Text = "Showing changelog bundled with this version. Checking GitHub for the latest release…";
+        Loaded += async (_, _) => await RefreshLatestReleaseNotesAsync();
         ShowStoragePanel(TempCleanupPanel);
         UpdateSectionChrome();
     }
@@ -219,11 +224,47 @@ public partial class MainWindow : Window
 
     public void ShowUpdateReleaseNotes(string releaseName, string version, string releaseNotes)
     {
-        AppReleaseNotesTitleText.Text = releaseName;
-        AppReleaseNotesText.Text = releaseNotes;
-        AppReleaseNotesPanel.Visibility = Visibility.Visible;
-        MainTabs.SelectedIndex = 2;
-        StatusText.Text = $"Updated to Nova {version}. Release notes are shown below.";
+        if (Version.TryParse(version, out var parsedVersion))
+        {
+            ShowLatestReleaseNotes(new AppReleaseNotes(parsedVersion, $"v{version}", releaseName, releaseNotes));
+        }
+
+        MainTabs.SelectedIndex = 4;
+        StatusText.Text = $"Updated to Nova {version}. The latest changelog is shown in Settings.";
+        _ = RefreshLatestReleaseNotesAsync();
+    }
+
+    public async Task RefreshLatestReleaseNotesAsync()
+    {
+        if (isLoadingLatestReleaseNotes)
+        {
+            return;
+        }
+
+        isLoadingLatestReleaseNotes = true;
+        LatestReleaseNotesStatusText.Text = "Checking GitHub for the latest release notes…";
+        try
+        {
+            var releaseNotes = await AppUpdateService.GetLatestReleaseNotesAsync(CancellationToken.None);
+            ShowLatestReleaseNotes(releaseNotes);
+            LatestReleaseNotesStatusText.Text = $"Latest published release: {releaseNotes.Tag}.";
+        }
+        catch (Exception exception)
+        {
+            LatestReleaseNotesStatusText.Text =
+                $"Could not refresh the changelog from GitHub. Showing bundled Nova {AppUpdateService.CurrentVersion} notes instead. {exception.Message}";
+        }
+        finally
+        {
+            isLoadingLatestReleaseNotes = false;
+        }
+    }
+
+    private void ShowLatestReleaseNotes(AppReleaseNotes releaseNotes)
+    {
+        LatestReleaseNotesTitleText.Text = releaseNotes.ReleaseName;
+        LatestReleaseNotesText.Text = releaseNotes.Notes;
+        LatestReleaseNotesPanel.Visibility = Visibility.Visible;
     }
 
     private async Task CheckForAppUpdatesAsync()
@@ -1109,6 +1150,11 @@ public partial class MainWindow : Window
         if (!isBusy)
         {
             ScanButton.Content = GetScanButtonText();
+        }
+
+        if (MainTabs.SelectedIndex == 4)
+        {
+            _ = RefreshLatestReleaseNotesAsync();
         }
     }
 

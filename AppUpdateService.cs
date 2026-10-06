@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace NovaManager;
 
@@ -16,11 +17,17 @@ internal sealed record AppUpdateRelease(
     Uri DownloadUri,
     string Sha256);
 
+internal sealed record AppReleaseNotes(Version Version, string Tag, string ReleaseName, string Notes);
+
 internal static class AppUpdateService
 {
     private const string ReleaseApiUrl = "https://api.github.com/repos/alfeoscr1-glitch/NovaManager/releases/latest";
     private const string AssetName = "NovaManager.exe";
     private const long MaximumDownloadBytes = 512L * 1024 * 1024;
+    private static string LocalUpdatesDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "NovaSoftwareManager",
+        "updates");
     private static readonly HttpClient Client = CreateHttpClient();
 
     public static Version CurrentVersion
@@ -52,19 +59,9 @@ internal static class AppUpdateService
 
         var tag = release.GetProperty("tag_name").GetString()
             ?? throw new InvalidDataException("The GitHub release did not include a version tag.");
+        var version = ParseReleaseVersion(tag);
         var releaseName = release.GetProperty("name").GetString() ?? $"Nova Manager {tag}";
-        var releaseNotes = release.GetProperty("body").GetString()
-            ?? throw new InvalidDataException($"The GitHub release {tag} did not include its changelog.");
-        if (string.IsNullOrWhiteSpace(releaseNotes) || releaseNotes.Length > 20_000)
-        {
-            throw new InvalidDataException($"The GitHub release {tag} contains an empty or oversized changelog.");
-        }
-
-        var versionText = tag.StartsWith('v') || tag.StartsWith('V') ? tag[1..] : tag;
-        if (!Version.TryParse(versionText, out var version) || version.Build < 0 || version.Revision >= 0)
-        {
-            throw new InvalidDataException($"The GitHub release tag “{tag}” is not a supported three-part version.");
-        }
+        var releaseNotes = GetReleaseNotes(release.GetProperty("body").GetString(), version);
 
         var assets = release.GetProperty("assets").EnumerateArray();
         JsonElement asset = default;
@@ -103,20 +100,106 @@ internal static class AppUpdateService
             : null;
     }
 
+    public static async Task<AppReleaseNotes> GetLatestReleaseNotesAsync(CancellationToken cancellationToken)
+    {
+        using var response = await Client.GetAsync(ReleaseApiUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            throw new InvalidOperationException(
+                "The configured public GitHub repository or its latest release was not found.");
+        }
+
+        response.EnsureSuccessStatusCode();
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+        var release = document.RootElement;
+        if (release.GetProperty("draft").GetBoolean() || release.GetProperty("prerelease").GetBoolean())
+        {
+            throw new InvalidDataException("The latest GitHub release is a draft or prerelease.");
+        }
+
+        var tag = release.GetProperty("tag_name").GetString()
+            ?? throw new InvalidDataException("The GitHub release did not include a version tag.");
+        var version = ParseReleaseVersion(tag);
+        var releaseName = release.GetProperty("name").GetString() ?? $"Nova Manager {tag}";
+        var notes = GetReleaseNotes(release.GetProperty("body").GetString(), version);
+        return new AppReleaseNotes(version, tag, releaseName, notes);
+    }
+
+    public static AppReleaseNotes GetBundledReleaseNotes(Version version)
+    {
+        using var stream = typeof(AppUpdateService).Assembly.GetManifestResourceStream("NovaManager.CHANGELOG.md")
+            ?? throw new InvalidOperationException("The bundled Nova changelog is missing from the application.");
+        using var reader = new StreamReader(stream);
+        var headingPattern = new Regex(
+            @"^##\s+(\d+\.\d+\.\d+)\s+[—-]\s+(.+?)\s*$",
+            RegexOptions.Multiline | RegexOptions.CultureInvariant);
+        var changelog = reader.ReadToEnd();
+        var headings = headingPattern.Matches(changelog);
+        for (var index = 0; index < headings.Count; index++)
+        {
+            var heading = headings[index];
+            if (!Version.TryParse(heading.Groups[1].Value, out var entryVersion) || entryVersion != version)
+            {
+                continue;
+            }
+
+            var notesStart = heading.Index + heading.Length;
+            var notesEnd = index + 1 < headings.Count ? headings[index + 1].Index : changelog.Length;
+            var notes = changelog[notesStart..notesEnd].Trim();
+            if (notes.Length > 0)
+            {
+                return new AppReleaseNotes(version, $"v{version}", $"Nova Manager {version} ({heading.Groups[2].Value})", notes);
+            }
+        }
+
+        throw new InvalidDataException($"The application does not contain bundled changelog notes for version {version}.");
+    }
+
+    private static Version ParseReleaseVersion(string tag)
+    {
+        var versionText = tag.StartsWith('v') || tag.StartsWith('V') ? tag[1..] : tag;
+        if (!Version.TryParse(versionText, out var version) || version.Build < 0 || version.Revision >= 0)
+        {
+            throw new InvalidDataException($"The GitHub release tag “{tag}” is not a supported three-part version.");
+        }
+
+        return version;
+    }
+
+    private static string GetReleaseNotes(string? releaseBody, Version version)
+    {
+        if (!string.IsNullOrWhiteSpace(releaseBody) && releaseBody.Length <= 20_000)
+        {
+            return releaseBody.Trim();
+        }
+
+        try
+        {
+            return GetBundledReleaseNotes(version).Notes;
+        }
+        catch (InvalidDataException)
+        {
+            return $"No changelog was published for Nova {version}.";
+        }
+    }
+
     public static async Task<string> DownloadAndVerifyAsync(
         AppUpdateRelease release,
         CancellationToken cancellationToken)
     {
         var targetPath = Environment.ProcessPath
             ?? throw new InvalidOperationException("Nova could not determine its executable path.");
-        var targetDirectory = Path.GetDirectoryName(Path.GetFullPath(targetPath))
-            ?? throw new InvalidOperationException("Nova could not determine its installation folder.");
         if (!Path.GetFileName(targetPath).Equals(AssetName, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException("Automatic updates are supported only when this app is running as NovaManager.exe.");
         }
 
-        var stageDirectory = Path.Combine(targetDirectory, $".NovaUpdate-{Guid.NewGuid():N}");
+        var stageRoot = CurrentVersion >= new Version(1, 0, 8)
+            ? LocalUpdatesDirectory
+            : Path.GetDirectoryName(Path.GetFullPath(targetPath))
+                ?? throw new InvalidOperationException("Nova could not determine its installation folder.");
+        var stageDirectory = Path.Combine(stageRoot, $".NovaUpdate-{Guid.NewGuid():N}");
         Directory.CreateDirectory(stageDirectory);
         var stagePath = Path.Combine(stageDirectory, AssetName);
         try
@@ -210,6 +293,14 @@ internal static class AppUpdateInstaller
     private const string ApplyArgument = "--apply-update";
     private const string CleanupArgument = "--cleanup-update";
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+    private static string LocalUpdatesDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "NovaSoftwareManager",
+        "updates");
+    private static string LocalBackupsDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "NovaSoftwareManager",
+        "backups");
 
     public static bool IsApplyUpdateInvocation(string[] args) =>
         args.Length == 2 && args[0].Equals(ApplyArgument, StringComparison.Ordinal);
@@ -246,9 +337,14 @@ internal static class AppUpdateInstaller
             ?? throw new InvalidDataException("The application folder could not be determined.");
         var stageDirectory = Path.GetDirectoryName(stagePath)
             ?? throw new InvalidDataException("The update staging folder could not be determined.");
+        var updatesDirectory = Path.GetFullPath(LocalUpdatesDirectory);
+        var isLegacyStage = Path.GetDirectoryName(stageDirectory)!.Equals(targetDirectory, StringComparison.OrdinalIgnoreCase);
+        var isLocalStage = Path.GetDirectoryName(stageDirectory)!.Equals(updatesDirectory, StringComparison.OrdinalIgnoreCase);
+        var stageRoot = isLegacyStage ? targetDirectory : updatesDirectory;
         if (!Path.GetFileName(targetPath).Equals("NovaManager.exe", StringComparison.OrdinalIgnoreCase) ||
             !Path.GetFileName(stagePath).Equals("NovaManager.exe", StringComparison.OrdinalIgnoreCase) ||
-            !IsWithinDirectory(stagePath, targetDirectory) ||
+            (!isLegacyStage && !isLocalStage) ||
+            !IsWithinDirectory(stagePath, stageRoot) ||
             !Path.GetFileName(stageDirectory).StartsWith(".NovaUpdate-", StringComparison.OrdinalIgnoreCase) ||
             !IsWithinDirectory(executablePath, updaterRoot) ||
             !File.Exists(targetPath) || !File.Exists(stagePath))
@@ -282,7 +378,8 @@ internal static class AppUpdateInstaller
             }
         }
 
-        var backupPath = Path.Combine(targetDirectory, $"NovaManager.exe.previous-{DateTime.UtcNow:yyyyMMddHHmmss}");
+        Directory.CreateDirectory(LocalBackupsDirectory);
+        var backupPath = Path.Combine(LocalBackupsDirectory, $"NovaManager.exe.previous-{DateTime.UtcNow:yyyyMMddHHmmss}");
         ReplaceWithRetry(stagePath, targetPath, backupPath);
 
         var startInfo = new ProcessStartInfo
@@ -325,7 +422,8 @@ internal static class AppUpdateInstaller
             !Path.GetFileName(helperPath).Equals("NovaManagerUpdater.exe", StringComparison.OrdinalIgnoreCase) ||
             !Path.GetDirectoryName(configPath)!.Equals(updaterDirectory, StringComparison.OrdinalIgnoreCase) ||
             !Path.GetFileName(configPath).Equals("update.json", StringComparison.OrdinalIgnoreCase) ||
-            !Path.GetDirectoryName(stageDirectory)!.Equals(targetDirectory, StringComparison.OrdinalIgnoreCase) ||
+            (!Path.GetDirectoryName(stageDirectory)!.Equals(targetDirectory, StringComparison.OrdinalIgnoreCase) &&
+             !Path.GetDirectoryName(stageDirectory)!.Equals(Path.GetFullPath(LocalUpdatesDirectory), StringComparison.OrdinalIgnoreCase)) ||
             !Path.GetFileName(stageDirectory).StartsWith(".NovaUpdate-", StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidDataException("The temporary updater cleanup paths failed Nova's safety checks.");
@@ -333,12 +431,13 @@ internal static class AppUpdateInstaller
 
         var config = JsonSerializer.Deserialize<UpdateInstallConfig>(await File.ReadAllTextAsync(configPath), JsonOptions)
             ?? throw new InvalidDataException("The update configuration is empty.");
-        if (!Version.TryParse(config.Version, out _) ||
-            string.IsNullOrWhiteSpace(config.ReleaseName) ||
-            string.IsNullOrWhiteSpace(config.ReleaseNotes) ||
-            config.ReleaseNotes.Length > 20_000)
+        var hasReleaseNotes = !string.IsNullOrWhiteSpace(config.Version) &&
+            !string.IsNullOrWhiteSpace(config.ReleaseName) &&
+            !string.IsNullOrWhiteSpace(config.ReleaseNotes);
+        if (hasReleaseNotes &&
+            (!Version.TryParse(config.Version, out _) || config.ReleaseNotes!.Length > 20_000))
         {
-            throw new InvalidDataException("The installed update's changelog is missing or invalid.");
+            throw new InvalidDataException("The installed update's changelog is invalid.");
         }
 
         using (var helper = TryGetProcess(helperProcessId))
@@ -349,13 +448,72 @@ internal static class AppUpdateInstaller
             }
         }
 
-        mainWindow.ShowUpdateReleaseNotes(config.ReleaseName, config.Version, config.ReleaseNotes);
+        if (Path.GetDirectoryName(stageDirectory)!.Equals(targetDirectory, StringComparison.OrdinalIgnoreCase))
+        {
+            MoveLegacyRollbackBackups(targetDirectory);
+        }
+
+        if (hasReleaseNotes && config.Version is not null && config.ReleaseName is not null && config.ReleaseNotes is not null)
+        {
+            mainWindow.ShowUpdateReleaseNotes(config.ReleaseName, config.Version, config.ReleaseNotes);
+        }
+        else
+        {
+            var bundledNotes = AppUpdateService.GetBundledReleaseNotes(AppUpdateService.CurrentVersion);
+            mainWindow.ShowUpdateReleaseNotes(
+                bundledNotes.ReleaseName,
+                AppUpdateService.CurrentVersion.ToString(3),
+                bundledNotes.Notes);
+            await mainWindow.RefreshLatestReleaseNotesAsync();
+        }
+
         File.Delete(configPath);
         File.Delete(helperPath);
         Directory.Delete(updaterDirectory);
         if (Directory.Exists(stageDirectory))
         {
             Directory.Delete(stageDirectory);
+        }
+    }
+
+    private static void MoveLegacyRollbackBackups(string targetDirectory)
+    {
+        using var currentProcess = Process.GetCurrentProcess();
+        var processStartedUtc = currentProcess.StartTime.ToUniversalTime();
+        var earliestBackupUtc = processStartedUtc - TimeSpan.FromMinutes(2);
+        var latestBackupUtc = processStartedUtc + TimeSpan.FromSeconds(5);
+        foreach (var backupPath in Directory.EnumerateFiles(targetDirectory, "NovaManager.exe.previous-*"))
+        {
+            var timestampText = Path.GetFileName(backupPath)["NovaManager.exe.previous-".Length..];
+            if (!DateTime.TryParseExact(
+                    timestampText,
+                    "yyyyMMddHHmmss",
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal,
+                    out var timestampUtc) ||
+                timestampUtc < earliestBackupUtc ||
+                timestampUtc > latestBackupUtc)
+            {
+                continue;
+            }
+
+            Directory.CreateDirectory(LocalBackupsDirectory);
+            var destination = Path.Combine(LocalBackupsDirectory, Path.GetFileName(backupPath));
+            if (File.Exists(destination))
+            {
+                destination = Path.Combine(
+                    LocalBackupsDirectory,
+                    $"NovaManager.exe.previous-{Guid.NewGuid():N}");
+            }
+
+            File.Copy(backupPath, destination);
+            if (!FilesMatch(backupPath, destination))
+            {
+                File.Delete(destination);
+                throw new IOException("The previous Nova executable backup could not be verified after moving it to Local AppData.");
+            }
+
+            File.Delete(backupPath);
         }
     }
 
@@ -398,33 +556,43 @@ internal static class AppUpdateInstaller
         }
     }
 
-    private static void ReplaceWithRollback(string stagePath, string targetPath, string backupPath)
+    private static void ReplaceWithRetry(string stagePath, string targetPath, string backupPath)
     {
-        File.Move(targetPath, backupPath);
+        CopyFileWithRetry(targetPath, backupPath, overwrite: false);
         try
         {
-            File.Move(stagePath, targetPath);
+            CopyFileWithRetry(stagePath, targetPath, overwrite: true);
+            if (!FilesMatch(stagePath, targetPath))
+            {
+                throw new IOException("The installed executable did not match the verified update download.");
+            }
         }
-        catch
+        catch (Exception installException)
         {
-            File.Move(backupPath, targetPath);
+            try
+            {
+                CopyFileWithRetry(backupPath, targetPath, overwrite: true);
+            }
+            catch (Exception rollbackException)
+            {
+                throw new AggregateException(
+                    "The update could not be installed and Nova could not restore the previous executable. The backup is retained in Local AppData.",
+                    installException,
+                    rollbackException);
+            }
+
             throw;
         }
     }
 
-    private static void ReplaceWithRetry(string stagePath, string targetPath, string backupPath)
+    private static void CopyFileWithRetry(string sourcePath, string destinationPath, bool overwrite)
     {
         const int maxAttempts = 30;
         for (var attempt = 1; ; attempt++)
         {
             try
             {
-                File.Replace(stagePath, targetPath, backupPath, ignoreMetadataErrors: true);
-                return;
-            }
-            catch (PlatformNotSupportedException)
-            {
-                ReplaceWithRollback(stagePath, targetPath, backupPath);
+                File.Copy(sourcePath, destinationPath, overwrite);
                 return;
             }
             catch (Exception exception) when (IsTransientFileLock(exception))
@@ -432,13 +600,25 @@ internal static class AppUpdateInstaller
                 if (attempt >= maxAttempts)
                 {
                     throw new IOException(
-                        "Windows kept the update file locked. Close any other Nova Manager windows or update dialogs, then try again.",
+                        "Windows kept an update file locked. Close any other Nova Manager windows or update dialogs, then try again.",
                         exception);
                 }
 
                 Thread.Sleep(TimeSpan.FromSeconds(1));
             }
         }
+    }
+
+    private static bool FilesMatch(string firstPath, string secondPath)
+    {
+        using var first = File.OpenRead(firstPath);
+        using var second = File.OpenRead(secondPath);
+        if (first.Length != second.Length)
+        {
+            return false;
+        }
+
+        return CryptographicOperations.FixedTimeEquals(SHA256.HashData(first), SHA256.HashData(second));
     }
 
     private static bool IsTransientFileLock(Exception exception)
@@ -499,7 +679,7 @@ internal static class AppUpdateInstaller
         int ParentProcessId,
         string TargetPath,
         string StagePath,
-        string Version,
-        string ReleaseName,
-        string ReleaseNotes);
+        string? Version = null,
+        string? ReleaseName = null,
+        string? ReleaseNotes = null);
 }
