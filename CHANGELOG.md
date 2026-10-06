@@ -6,6 +6,7 @@
 - The user's GitHub authorization token is protected with Windows DPAPI for the signed-in Windows account.
 - Saved authorization is reused for subsequent submissions, and expiring GitHub access tokens are renewed with the saved refresh token.
 - Fixed authorization storage compatibility so existing saved tokens are found and migrated rather than starting a new Device Flow for each submission.
+- Kept automatic background update-check failures quiet; Nova retries on its regular interval without repeatedly surfacing transient GitHub errors.
 
 ## 1.2.2 — Feature release
 

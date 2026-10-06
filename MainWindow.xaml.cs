@@ -453,10 +453,12 @@ public partial class MainWindow : Window
         {
             await RefreshUpdateAvailabilityAsync();
         }
-        catch (Exception exception)
+        catch (Exception exception) when (
+            exception is HttpRequestException or TaskCanceledException or JsonException or
+                InvalidOperationException or InvalidDataException or IOException or
+                UnauthorizedAccessException)
         {
-            AppUpdateStatusText.Text = $"Live update check failed: {exception.Message}";
-            StatusText.Text = "Could not refresh Nova update availability.";
+            StatusText.Text = "GitHub is temporarily unavailable. Nova will retry automatically.";
         }
     }
 
