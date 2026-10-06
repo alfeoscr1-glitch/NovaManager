@@ -467,9 +467,18 @@ internal static class GitHubFeedbackService
     {
         if (blob.Data != IntPtr.Zero)
         {
-            RtlSecureZeroMemory(blob.Data, (UIntPtr)blob.Size);
-            Marshal.FreeHGlobal(blob.Data);
-            blob = default;
+            try
+            {
+                if (blob.Size > 0)
+                {
+                    Marshal.Copy(new byte[blob.Size], 0, blob.Data, blob.Size);
+                }
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(blob.Data);
+                blob = default;
+            }
         }
     }
 
@@ -579,9 +588,6 @@ internal static class GitHubFeedbackService
 
     [DllImport("kernel32.dll", EntryPoint = "LocalFree")]
     private static extern IntPtr LocalFree(IntPtr memory);
-
-    [DllImport("kernel32.dll", EntryPoint = "RtlSecureZeroMemory")]
-    private static extern IntPtr RtlSecureZeroMemory(IntPtr memory, UIntPtr length);
 }
 
 internal sealed class GitHubFeedbackException(string message, HttpStatusCode statusCode)

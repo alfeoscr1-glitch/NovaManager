@@ -8,7 +8,7 @@
 - Fixed authorization storage compatibility so existing saved tokens are found and migrated rather than starting a new Device Flow for each submission.
 - Kept automatic background update-check failures quiet; Nova retries on its regular interval without repeatedly surfacing transient GitHub errors.
 - Kept Nova open throughout GitHub authorization and report submission, and surfaced authorization failures in Settings instead of allowing them to terminate the application.
-
+- Fixed GitHub authorization storage failing on Windows because of an unsupported native memory-zeroing import; tokens now save and load correctly.
 ## 1.2.2 — Feature release
 
 - Added Settings feature-suggestion and bug-report forms; bug reports include only Nova and Windows version diagnostics.
