@@ -3,6 +3,9 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using Microsoft.Win32;
+using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -250,21 +253,21 @@ public partial class MainWindow : Window
     private async void CheckAppUpdates_Click(object sender, RoutedEventArgs e) =>
         await CheckForAppUpdatesAsync(forceRefresh: true);
 
-    private void SendFeatureSuggestion_Click(object sender, RoutedEventArgs e) =>
-        OpenGitHubFeedbackIssue(
+    private async void SendFeatureSuggestion_Click(object sender, RoutedEventArgs e) =>
+        await SubmitGitHubFeedbackAsync(
             FeatureSuggestionTextBox,
             "Feature suggestion",
             "enhancement",
             includeDiagnostics: false);
 
-    private void SendBugReport_Click(object sender, RoutedEventArgs e) =>
-        OpenGitHubFeedbackIssue(
+    private async void SendBugReport_Click(object sender, RoutedEventArgs e) =>
+        await SubmitGitHubFeedbackAsync(
             BugReportTextBox,
             "Bug report",
             "bug",
             includeDiagnostics: true);
 
-    private void OpenGitHubFeedbackIssue(
+    private async Task SubmitGitHubFeedbackAsync(
         System.Windows.Controls.TextBox input,
         string issueType,
         string label,
@@ -286,21 +289,56 @@ public partial class MainWindow : Window
         }
 
         body += "\n\nSubmitted from Nova Manager Feedback & Support. @alfeoscr1-glitch";
-        var issueUrl = new Uri(
-            "https://github.com/alfeoscr1-glitch/NovaManager/issues/new" +
-            $"?title={Uri.EscapeDataString($"[{issueType}] Nova Manager feedback")}" +
-            $"&body={Uri.EscapeDataString(body)}&labels={Uri.EscapeDataString(label)}");
+        var title = $"[{issueType}] Nova Manager feedback";
+        FeatureSuggestionButton.IsEnabled = false;
+        BugReportButton.IsEnabled = false;
+        FeedbackStatusText.Text = "Sending your report to GitHub…";
         try
         {
-            _ = Process.Start(new ProcessStartInfo(issueUrl.AbsoluteUri) { UseShellExecute = true })
-                ?? throw new InvalidOperationException("Windows did not start a browser for the GitHub issue draft.");
-            FeedbackStatusText.Text =
-                "GitHub opened with a prefilled draft. Review it and select Create issue to submit; Nova has not sent it.";
+            var issueUrl = await GitHubFeedbackService.SubmitIssueAsync(
+                title,
+                body,
+                label,
+                AuthorizeGitHubFeedbackAsync,
+                CancellationToken.None);
+            input.Clear();
+            FeedbackStatusText.Text = $"Submitted successfully. GitHub created the issue: {issueUrl}";
         }
-        catch (Exception exception) when (exception is Win32Exception or InvalidOperationException or UriFormatException)
+        catch (Exception exception) when (
+            exception is HttpRequestException or TaskCanceledException or JsonException or
+                InvalidOperationException or InvalidDataException or IOException or
+                UnauthorizedAccessException or CryptographicException or Win32Exception)
         {
-            FeedbackStatusText.Text = $"Could not open the GitHub issue draft: {exception.Message}";
+            FeedbackStatusText.Text = $"Could not submit the report. No success was reported. {exception.Message}";
         }
+        finally
+        {
+            FeatureSuggestionButton.IsEnabled = true;
+            BugReportButton.IsEnabled = true;
+        }
+    }
+
+    private Task AuthorizeGitHubFeedbackAsync(string userCode, string verificationUri)
+    {
+        _ = Process.Start(new ProcessStartInfo(verificationUri) { UseShellExecute = true })
+            ?? throw new InvalidOperationException("Windows could not open GitHub's one-time sign-in page.");
+
+        var result = MessageBox.Show(
+            this,
+            $"Nova needs one-time permission to submit feedback to the public Nova Manager repository.{Environment.NewLine}{Environment.NewLine}" +
+            $"GitHub's authorization page has been opened. Enter this code there:{Environment.NewLine}{Environment.NewLine}" +
+            $"{userCode}{Environment.NewLine}{Environment.NewLine}" +
+            "After approving Nova in GitHub, select OK. Nova will then submit this report automatically.",
+            "Authorize Nova feedback",
+            MessageBoxButton.OKCancel,
+            MessageBoxImage.Information);
+        if (result != MessageBoxResult.OK)
+        {
+            throw new InvalidOperationException("GitHub sign-in was canceled; no report was submitted.");
+        }
+
+        FeedbackStatusText.Text = "Waiting for GitHub authorization…";
+        return Task.CompletedTask;
     }
 
     private void AppearanceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

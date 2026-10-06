@@ -1,8 +1,13 @@
 # Nova Manager changelog
 
+## 1.2.2 — Hotfix
+
+- Feedback and bug reports are now submitted directly as GitHub Issues after one-time GitHub authorization; no browser-based issue submission or embedded access token is used.
+- The user's GitHub authorization token is protected with Windows DPAPI for the signed-in Windows account.
+
 ## 1.2.2 — Feature release
 
-- Added Settings feedback forms that open prefilled GitHub feature-suggestion and bug-report drafts; bug drafts include only Nova and Windows version diagnostics.
+- Added Settings feature-suggestion and bug-report forms; bug reports include only Nova and Windows version diagnostics.
 - Added hourly, per-user update checks while Nova is closed, with a Windows notification that opens Settings and never installs automatically.
 - Reduced GitHub API traffic with conditional requests and a persistent Local AppData cache; rate limiting now preserves the last known release details and explains the status in Settings.
 
