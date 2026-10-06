@@ -1,0 +1,98 @@
+name: Build and publish Nova
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nova-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Select next patch version
+        id: version
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            const stableVersions = releases
+              .filter(release => !release.draft && !release.prerelease)
+              .map(release => {
+                const match = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(release.tag_name);
+                return match
+                  ? { major: Number(match[1]), minor: Number(match[2]), patch: Number(match[3]) }
+                  : null;
+              })
+              .filter(Boolean)
+              .sort((a, b) =>
+                a.major - b.major || a.minor - b.minor || a.patch - b.patch);
+
+            let next;
+            if (stableVersions.length === 0) {
+              const fs = require('fs');
+              const project = fs.readFileSync('NovaManager.csproj', 'utf8');
+              const match = /<Version>(\d+)\.(\d+)\.(\d+)<\/Version>/.exec(project);
+              if (!match) {
+                throw new Error('No stable GitHub release or three-part project version was found.');
+              }
+              next = { major: Number(match[1]), minor: Number(match[2]), patch: Number(match[3]) + 1 };
+            } else {
+              const latest = stableVersions[stableVersions.length - 1];
+              next = { ...latest, patch: latest.patch + 1 };
+            }
+
+            core.setOutput('version', `${next.major}.${next.minor}.${next.patch}`);
+            core.info(`Next Nova release: v${next.major}.${next.minor}.${next.patch}`);
+
+      - name: Publish self-contained Windows executable
+        shell: pwsh
+        run: >-
+          dotnet publish .\NovaManager.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:Version=${{ steps.version.outputs.version }}
+          -o .\artifacts\publish
+
+      - name: Create GitHub release and upload executable
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          $asset = ".\artifacts\publish\NovaManager.exe"
+          if (-not (Test-Path -LiteralPath $asset -PathType Leaf)) {
+            throw "Published executable not found: $asset"
+          }
+          $tag = "v$env:VERSION"
+          gh release create $tag $asset `
+            --repo "${{ github.repository }}" `
+            --title "Nova Manager $tag" `
+            --notes "Automated self-contained Windows x64 release built from commit $env:GITHUB_SHA." `
+            --target "$env:GITHUB_SHA"
+          if ($LASTEXITCODE -ne 0) {
+            throw "GitHub CLI failed to create release $tag."
+          }
