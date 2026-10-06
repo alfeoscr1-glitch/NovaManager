@@ -16,6 +16,7 @@ A Windows desktop app for reviewing installed software, checking third-party upd
 - Settings includes a Light/Dark appearance selector. The selection applies immediately and is saved for the next launch.
 - The gear beside Nova Software Manager opens Settings. Check for updates queries the latest stable release from `alfeoscr1-glitch/NovaManager` on GitHub. Nova downloads only the `NovaManager.exe` release asset, verifies it against GitHub's SHA-256 asset digest, then uses a separate helper process to replace and restart the app. The prior executable is retained as a timestamped `.previous-...` backup.
 - Settings always shows the latest published release version and changelog. It loads the notes from GitHub and includes the installed version's changelog in the single-file EXE for offline use.
+- The Settings page groups release notes, appearance, and application update controls into clearer, responsive sections.
 - A GitHub Actions workflow builds and publishes a new self-contained EXE release on each push to `main`. It selects the higher of the project version and next patch version, and requires a matching changelog entry, so no manual binary upload is needed.
 
 ## Build and run

@@ -7,7 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>NovaManager</AssemblyName>
     <RootNamespace>NovaManager</RootNamespace>
-    <Version>1.0.8</Version>
+    <Version>1.0.9</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>
     <FileVersion>$(Version)</FileVersion>
     <InformationalVersion>$(Version)</InformationalVersion>

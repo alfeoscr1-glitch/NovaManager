@@ -1,5 +1,10 @@
 # Nova Manager changelog
 
+## 1.0.9 — Hotfix
+
+- Polished the Settings layout with clearer release-note, appearance, and application-update sections.
+- Improved spacing, version/status hierarchy, and responsive update actions while preserving existing Settings behavior.
+
 ## 1.0.8 — Hotfix
 
 - Fixed changelog errors after updating from Nova 1.0.7 by accepting its older updater handoff and always showing release notes in Settings.
