@@ -115,24 +115,27 @@ internal static class AppUpdateService
             }
 
             await using var source = await response.Content.ReadAsStreamAsync(cancellationToken);
-            await using var destination = new FileStream(stagePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 131072, true);
             using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             var buffer = new byte[131072];
             long totalBytes = 0;
-            int bytesRead;
-            while ((bytesRead = await source.ReadAsync(buffer, cancellationToken)) > 0)
+            await using (var destination = new FileStream(stagePath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 131072, true))
             {
-                totalBytes += bytesRead;
-                if (totalBytes > MaximumDownloadBytes)
+                int bytesRead;
+                while ((bytesRead = await source.ReadAsync(buffer, cancellationToken)) > 0)
                 {
-                    throw new InvalidDataException("The update asset exceeds Nova's 512 MB safety limit.");
+                    totalBytes += bytesRead;
+                    if (totalBytes > MaximumDownloadBytes)
+                    {
+                        throw new InvalidDataException("The update asset exceeds Nova's 512 MB safety limit.");
+                    }
+
+                    hash.AppendData(buffer, 0, bytesRead);
+                    await destination.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
                 }
 
-                hash.AppendData(buffer, 0, bytesRead);
-                await destination.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                await destination.FlushAsync(cancellationToken);
             }
 
-            await destination.FlushAsync(cancellationToken);
             var actualHash = Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
             if (!actualHash.Equals(release.Sha256, StringComparison.OrdinalIgnoreCase))
             {
