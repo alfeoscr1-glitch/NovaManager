@@ -1,5 +1,10 @@
 # Nova Manager changelog
 
+## 1.2.1 — Hotfix
+
+- Added a bridge patch so existing 1.2.0 installations can receive hotfixes even when the release keeps the same version tag.
+- Stable hotfix updates with the same version are detected by comparing the installed EXE with the published release asset SHA-256 digest.
+
 ## 1.2.0 — Hotfix
 
 - Fixed the Settings appearance selector so the selected Light or Dark theme is always visible.
