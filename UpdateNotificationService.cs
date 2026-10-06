@@ -82,7 +82,7 @@ internal sealed class UpdateNotificationService : IDisposable
         };
         foreach (var argument in new[]
         {
-            "/Create", "/SC", "HOURLY", "/MO", "1", "/TN", ScheduledTaskName,
+            "/Create", "/SC", "MINUTE", "/MO", "15", "/TN", ScheduledTaskName,
             "/TR", taskAction, "/F", "/IT", "/RL", "LIMITED"
         })
         {
@@ -101,7 +101,7 @@ internal sealed class UpdateNotificationService : IDisposable
             var details = string.Join(Environment.NewLine, new[] { output.Trim(), error.Trim() }
                 .Where(static text => text.Length > 0));
             throw new InvalidOperationException(
-                $"Windows could not register Nova's hourly update check. {details}".Trim());
+                $"Windows could not register Nova's background update check. {details}".Trim());
         }
     }
 

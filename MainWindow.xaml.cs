@@ -27,7 +27,7 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<StorageEntryInfo> storageFolders = new();
     private readonly ObservableCollection<ShortcutInfo> shortcuts = new();
     private readonly UpdateNotificationService updateNotificationService = new();
-    private readonly DispatcherTimer updateCheckTimer = new() { Interval = TimeSpan.FromMinutes(30) };
+    private readonly DispatcherTimer updateCheckTimer = new() { Interval = TimeSpan.FromMinutes(15) };
     private AppUpdateRelease? availableAppUpdate;
     private TempScanResult? lastTempScan;
     private bool isBusy;
