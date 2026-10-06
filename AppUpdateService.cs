@@ -96,8 +96,16 @@ internal static class AppUpdateService
             throw new InvalidDataException("The release asset URL was not a GitHub HTTPS release URL for the configured repository.");
         }
 
-        return version > CurrentVersion
-            ? new AppUpdateRelease(version, tag, releaseName, releaseNotes, downloadUri, digest[7..].ToLowerInvariant())
+        var releaseDigest = digest[7..].ToLowerInvariant();
+        var updateAvailable = version > CurrentVersion;
+        if (version == CurrentVersion)
+        {
+            var installedDigest = await GetCurrentExecutableDigestAsync(cancellationToken);
+            updateAvailable = !installedDigest.Equals(releaseDigest, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return updateAvailable
+            ? new AppUpdateRelease(version, tag, releaseName, releaseNotes, downloadUri, releaseDigest)
             : null;
     }
 
@@ -138,27 +146,71 @@ internal static class AppUpdateService
             throw new InvalidDataException("GitHub returned an invalid release list.");
         }
 
-        return document.RootElement.EnumerateArray().Count(release =>
+        var newerReleaseCount = 0;
+        var sameVersionReleaseDigest = string.Empty;
+        foreach (var release in document.RootElement.EnumerateArray())
         {
             if (release.TryGetProperty("draft", out var draft) && draft.GetBoolean() ||
                 release.TryGetProperty("prerelease", out var prerelease) && prerelease.GetBoolean() ||
                 !release.TryGetProperty("tag_name", out var tagElement))
             {
-                return false;
+                continue;
             }
 
             var tag = tagElement.GetString();
             if (string.IsNullOrWhiteSpace(tag))
             {
-                return false;
+                continue;
             }
 
             var versionText = tag.StartsWith('v') || tag.StartsWith('V') ? tag[1..] : tag;
-            return Version.TryParse(versionText, out var version) &&
-                version.Build >= 0 &&
-                version.Revision < 0 &&
-                version > CurrentVersion;
-        });
+            if (!Version.TryParse(versionText, out var version) || version.Build < 0 || version.Revision >= 0)
+            {
+                continue;
+            }
+
+            if (version > CurrentVersion)
+            {
+                newerReleaseCount++;
+            }
+            else if (version == CurrentVersion && sameVersionReleaseDigest.Length == 0 &&
+                     release.TryGetProperty("assets", out var assets))
+            {
+                foreach (var asset in assets.EnumerateArray())
+                {
+                    if (string.Equals(asset.GetProperty("name").GetString(), AssetName, StringComparison.Ordinal) &&
+                        asset.TryGetProperty("digest", out var digest) &&
+                        digest.GetString() is { } digestText &&
+                        digestText.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase) &&
+                        digestText.Length == 71 &&
+                        digestText.AsSpan(7).ToString().All(Uri.IsHexDigit))
+                    {
+                        sameVersionReleaseDigest = digestText[7..];
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (sameVersionReleaseDigest.Length > 0)
+        {
+            var installedDigest = await GetCurrentExecutableDigestAsync(cancellationToken);
+            if (!installedDigest.Equals(sameVersionReleaseDigest, StringComparison.OrdinalIgnoreCase))
+            {
+                newerReleaseCount++;
+            }
+        }
+
+        return newerReleaseCount;
+    }
+
+    private static async Task<string> GetCurrentExecutableDigestAsync(CancellationToken cancellationToken)
+    {
+        var executablePath = Environment.ProcessPath
+            ?? throw new InvalidOperationException("Nova could not determine its executable path for update verification.");
+        await using var stream = File.OpenRead(executablePath);
+        var digest = await SHA256.HashDataAsync(stream, cancellationToken);
+        return Convert.ToHexString(digest);
     }
 
     public static AppReleaseNotes GetBundledReleaseNotes(Version version)

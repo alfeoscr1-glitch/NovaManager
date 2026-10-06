@@ -61,11 +61,20 @@ jobs:
             const compare = (a, b) =>
               a.major - b.major || a.minor - b.minor || a.patch - b.patch;
             const latest = stableVersions[stableVersions.length - 1];
-            const next = !latest || compare(projectVersion, latest) > 0
-              ? projectVersion
-              : { ...latest, patch: latest.patch + 1 };
-            const version = `${next.major}.${next.minor}.${next.patch}`;
             const changelog = fs.readFileSync('CHANGELOG.md', 'utf8');
+            const projectVersionText = `${projectVersion.major}.${projectVersion.minor}.${projectVersion.patch}`;
+            const projectHotfix = new RegExp(
+              `^##\\s+${projectVersionText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+[—-]\\s+Hotfix\\s*$`, 'm'
+            ).test(changelog);
+            const isSameVersionHotfix = Boolean(
+              latest && compare(projectVersion, latest) === 0 && projectHotfix
+            );
+            const next = isSameVersionHotfix
+              ? projectVersion
+              : (!latest || compare(projectVersion, latest) > 0
+                  ? projectVersion
+                  : { ...latest, patch: latest.patch + 1 });
+            const version = `${next.major}.${next.minor}.${next.patch}`;
             const escapedVersion = version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const heading = new RegExp(`^##\\s+${escapedVersion}\\s+[—-]\\s+(Feature release|Hotfix)\\s*$`, 'm');
             const match = heading.exec(changelog);
@@ -82,6 +91,7 @@ jobs:
             core.setOutput('release_type', match[1]);
             core.setOutput('release_name', `Nova Manager v${version} (${match[1]})`);
             core.setOutput('notes', notes);
+            core.setOutput('replace_existing', isSameVersionHotfix ? 'true' : 'false');
             core.info(`Next Nova release: v${version} (${match[1]})`);
 
       - name: Publish self-contained Windows executable
@@ -103,6 +113,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
           RELEASE_NAME: ${{ steps.version.outputs.release_name }}
           RELEASE_NOTES: ${{ steps.version.outputs.notes }}
+          REPLACE_EXISTING: ${{ steps.version.outputs.replace_existing }}
         run: |
           $ErrorActionPreference = "Stop"
           $asset = ".\artifacts\publish\NovaManager.exe"
@@ -110,11 +121,26 @@ jobs:
             throw "Published executable not found: $asset"
           }
           $tag = "v$env:VERSION"
-          gh release create $tag $asset `
-            --repo "${{ github.repository }}" `
-            --title "$env:RELEASE_NAME" `
-            --notes "$env:RELEASE_NOTES" `
-            --target "$env:GITHUB_SHA"
-          if ($LASTEXITCODE -ne 0) {
-            throw "GitHub CLI failed to create release $tag."
+          if ($env:REPLACE_EXISTING -eq "true") {
+            gh release edit $tag `
+              --repo "${{ github.repository }}" `
+              --title "$env:RELEASE_NAME" `
+              --notes "$env:RELEASE_NOTES"
+            if ($LASTEXITCODE -ne 0) {
+              throw "GitHub CLI failed to update existing release $tag."
+            }
+            gh release upload $tag $asset --repo "${{ github.repository }}" --clobber
+            if ($LASTEXITCODE -ne 0) {
+              throw "GitHub CLI failed to replace the executable for release $tag."
+            }
+          }
+          else {
+            gh release create $tag $asset `
+              --repo "${{ github.repository }}" `
+              --title "$env:RELEASE_NAME" `
+              --notes "$env:RELEASE_NOTES" `
+              --target "$env:GITHUB_SHA"
+            if ($LASTEXITCODE -ne 0) {
+              throw "GitHub CLI failed to create release $tag."
+            }
           }

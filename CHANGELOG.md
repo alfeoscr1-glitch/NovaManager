@@ -1,5 +1,10 @@
 # Nova Manager changelog
 
+## 1.2.0 — Hotfix
+
+- Fixed the Settings appearance selector so the selected Light or Dark theme is always visible.
+- Re-published the existing 1.2.0 executable as a same-version hotfix; update detection compares the executable digest when versions match.
+
 ## 1.2.0 — Feature release
 
 - Added live checks for Nova updates while the app is running, with a Windows notification when a new release is detected.

@@ -36,10 +36,11 @@ internal sealed class UpdateNotificationService : IDisposable
 
     public void NotifyIfNew(AppUpdateRelease release)
     {
+        var notificationKey = $"{release.Tag}:{release.Sha256}";
         var lastNotifiedRelease = File.Exists(LastNotifiedReleasePath)
             ? File.ReadAllText(LastNotifiedReleasePath).Trim()
             : string.Empty;
-        if (lastNotifiedRelease.Equals(release.Tag, StringComparison.OrdinalIgnoreCase))
+        if (lastNotifiedRelease.Equals(notificationKey, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
@@ -47,7 +48,7 @@ internal sealed class UpdateNotificationService : IDisposable
         var directory = Path.GetDirectoryName(LastNotifiedReleasePath)
             ?? throw new InvalidOperationException("Nova could not determine the update notification settings folder.");
         Directory.CreateDirectory(directory);
-        File.WriteAllText(LastNotifiedReleasePath, release.Tag);
+        File.WriteAllText(LastNotifiedReleasePath, notificationKey);
 
         notifyIcon.Visible = true;
         notifyIcon.ShowBalloonTip(

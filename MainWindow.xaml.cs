@@ -52,6 +52,7 @@ public partial class MainWindow : Window
         AddFolderRootOptions();
         LoadShortcutsFolder();
         AppearanceComboBox.SelectedIndex = ThemeManager.CurrentTheme == "Dark" ? 1 : 0;
+        AppearanceSelectionText.Text = ThemeManager.CurrentTheme;
         AppearanceComboBox.SelectionChanged += AppearanceComboBox_SelectionChanged;
         AppVersionText.Text = $"Installed version: {AppUpdateService.CurrentVersion}";
         var bundledNotes = AppUpdateService.GetBundledReleaseNotes(AppUpdateService.CurrentVersion);
@@ -238,12 +239,14 @@ public partial class MainWindow : Window
         try
         {
             ThemeManager.SetTheme(Application.Current, theme);
+            AppearanceSelectionText.Text = theme;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             MessageBox.Show(this, $"Nova could not save the appearance setting.{Environment.NewLine}{exception.Message}",
                 "Appearance setting could not be saved", MessageBoxButton.OK, MessageBoxImage.Error);
             AppearanceComboBox.SelectedIndex = ThemeManager.CurrentTheme == "Dark" ? 1 : 0;
+            AppearanceSelectionText.Text = ThemeManager.CurrentTheme;
         }
     }
 
@@ -358,7 +361,9 @@ public partial class MainWindow : Window
         InstallAppUpdateButton.IsEnabled = availableAppUpdate is not null;
         AppUpdateStatusText.Text = availableAppUpdate is null
             ? $"You’re up to date. Installed version: {AppUpdateService.CurrentVersion}."
-            : $"Version {availableAppUpdate.Version} is available (release {availableAppUpdate.Tag}). Download it when you’re ready.";
+            : availableAppUpdate.Version == AppUpdateService.CurrentVersion
+                ? $"A hotfix for Nova {availableAppUpdate.Version} is available (release {availableAppUpdate.Tag}). Download it when you’re ready."
+                : $"Version {availableAppUpdate.Version} is available (release {availableAppUpdate.Tag}). Download it when you’re ready.";
 
         if (availableAppUpdate is not null)
         {
