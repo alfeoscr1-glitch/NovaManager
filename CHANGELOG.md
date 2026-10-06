@@ -5,6 +5,7 @@
 - Feedback and bug reports are now submitted directly as GitHub Issues after one-time GitHub authorization; no browser-based issue submission or embedded access token is used.
 - The user's GitHub authorization token is protected with Windows DPAPI for the signed-in Windows account.
 - Saved authorization is reused for subsequent submissions, and expiring GitHub access tokens are renewed with the saved refresh token.
+- Fixed authorization storage compatibility so existing saved tokens are found and migrated rather than starting a new Device Flow for each submission.
 
 ## 1.2.2 — Feature release
 

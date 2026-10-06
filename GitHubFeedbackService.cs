@@ -17,12 +17,17 @@ internal static class GitHubFeedbackService
     private const string AccessTokenUrl = "https://github.com/login/oauth/access_token";
     private const string IssuesUrl = "https://api.github.com/repos/alfeoscr1-glitch/NovaManager/issues";
     private const string TokenFilePathName = "github-feedback-authorization.dat";
+    private const string LegacyTokenFilePathName = "github-feedback-token.dat";
     private static readonly SemaphoreSlim AuthorizationLock = new(1, 1);
     private static readonly HttpClient Client = CreateHttpClient();
     private static string TokenFilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "NovaSoftwareManager",
         TokenFilePathName);
+    private static string LegacyTokenFilePath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "NovaSoftwareManager",
+        LegacyTokenFilePathName);
 
     public static async Task<string> SubmitIssueAsync(
         string title,
@@ -290,7 +295,10 @@ internal static class GitHubFeedbackService
 
     private static async Task<GitHubAuthorization?> ReadAuthorizationAsync(CancellationToken cancellationToken)
     {
-        if (!File.Exists(TokenFilePath))
+        var authorizationPath = File.Exists(TokenFilePath)
+            ? TokenFilePath
+            : LegacyTokenFilePath;
+        if (!File.Exists(authorizationPath))
         {
             return null;
         }
@@ -298,7 +306,7 @@ internal static class GitHubFeedbackService
         byte[] protectedAuthorization;
         try
         {
-            protectedAuthorization = await File.ReadAllBytesAsync(TokenFilePath, cancellationToken);
+            protectedAuthorization = await File.ReadAllBytesAsync(authorizationPath, cancellationToken);
         }
         catch (FileNotFoundException)
         {
@@ -310,8 +318,16 @@ internal static class GitHubFeedbackService
         {
             try
             {
-                return JsonSerializer.Deserialize<GitHubAuthorization>(authorizationBytes)
+                var authorization = JsonSerializer.Deserialize<GitHubAuthorization>(
+                    authorizationBytes,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
                     ?? throw new InvalidDataException("Nova's saved GitHub authorization file is empty.");
+                if (!string.Equals(authorizationPath, TokenFilePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    await StoreAuthorizationAsync(authorization, cancellationToken);
+                }
+
+                return authorization;
             }
             catch (JsonException)
             {
