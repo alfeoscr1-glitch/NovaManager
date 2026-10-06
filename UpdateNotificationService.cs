@@ -1,4 +1,5 @@
 using System.IO;
+using System.Diagnostics;
 using System.Windows.Forms;
 
 namespace NovaManager;
@@ -9,6 +10,7 @@ internal sealed class UpdateNotificationService : IDisposable
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "NovaSoftwareManager",
         "last-notified-release.txt");
+    private const string ScheduledTaskName = "NovaSoftwareManagerUpdateNotification";
 
     private readonly NotifyIcon notifyIcon = new()
     {
@@ -34,7 +36,7 @@ internal sealed class UpdateNotificationService : IDisposable
         };
     }
 
-    public void NotifyIfNew(AppUpdateRelease release)
+    public bool NotifyIfNew(AppUpdateRelease release)
     {
         var notificationKey = $"{release.Tag}:{release.Sha256}";
         var lastNotifiedRelease = File.Exists(LastNotifiedReleasePath)
@@ -42,7 +44,7 @@ internal sealed class UpdateNotificationService : IDisposable
             : string.Empty;
         if (lastNotifiedRelease.Equals(notificationKey, StringComparison.OrdinalIgnoreCase))
         {
-            return;
+            return false;
         }
 
         var directory = Path.GetDirectoryName(LastNotifiedReleasePath)
@@ -58,6 +60,67 @@ internal sealed class UpdateNotificationService : IDisposable
             ToolTipIcon.Info);
         hideIconTimer.Stop();
         hideIconTimer.Start();
+        return true;
+    }
+
+    public static async Task RegisterScheduledCheckAsync()
+    {
+        var executablePath = Environment.ProcessPath
+            ?? throw new InvalidOperationException("Nova could not determine its executable path for update notifications.");
+        var taskAction = $"\"{executablePath}\" --check-update-notification";
+        var startInfo = new ProcessStartInfo("schtasks.exe")
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        foreach (var argument in new[]
+        {
+            "/Create", "/SC", "HOURLY", "/MO", "1", "/TN", ScheduledTaskName,
+            "/TR", taskAction, "/F", "/IT", "/RL", "LIMITED"
+        })
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        using var process = Process.Start(startInfo)
+            ?? throw new InvalidOperationException("Windows could not start Task Scheduler to register update notifications.");
+        var outputTask = process.StandardOutput.ReadToEndAsync();
+        var errorTask = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+        var output = await outputTask;
+        var error = await errorTask;
+        if (process.ExitCode != 0)
+        {
+            var details = string.Join(Environment.NewLine, new[] { output.Trim(), error.Trim() }
+                .Where(static text => text.Length > 0));
+            throw new InvalidOperationException(
+                $"Windows could not register Nova's hourly update check. {details}".Trim());
+        }
+    }
+
+    public static async Task CheckAndNotifyWhenClosedAsync()
+    {
+        var release = await AppUpdateService.CheckAsync(CancellationToken.None);
+        if (release is null)
+        {
+            return;
+        }
+
+        using var notificationService = new UpdateNotificationService();
+        var clicked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        notificationService.NotificationClicked += (_, _) =>
+        {
+            var executablePath = Environment.ProcessPath
+                ?? throw new InvalidOperationException("Nova could not determine its executable path to open Settings.");
+            Process.Start(new ProcessStartInfo(executablePath, "--open-settings") { UseShellExecute = true });
+            clicked.TrySetResult();
+        };
+        if (notificationService.NotifyIfNew(release))
+        {
+            await Task.WhenAny(clicked.Task, Task.Delay(TimeSpan.FromSeconds(15)));
+        }
     }
 
     public void Dispose()

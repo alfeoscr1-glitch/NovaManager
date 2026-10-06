@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using Microsoft.Win32;
@@ -23,7 +24,7 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<StorageEntryInfo> storageFolders = new();
     private readonly ObservableCollection<ShortcutInfo> shortcuts = new();
     private readonly UpdateNotificationService updateNotificationService = new();
-    private readonly DispatcherTimer updateCheckTimer = new() { Interval = TimeSpan.FromMinutes(10) };
+    private readonly DispatcherTimer updateCheckTimer = new() { Interval = TimeSpan.FromMinutes(30) };
     private AppUpdateRelease? availableAppUpdate;
     private TempScanResult? lastTempScan;
     private bool isBusy;
@@ -35,9 +36,14 @@ public partial class MainWindow : Window
     private CancellationTokenSource? folderSearchCancellation;
     private string currentFolderMapPath = StorageExplorer.ThisPcPath;
 
-    public MainWindow()
+    public MainWindow(bool openSettings = false)
     {
         InitializeComponent();
+        if (openSettings)
+        {
+            MainTabs.SelectedIndex = 4;
+        }
+
         DataContext = new
         {
             Software = software,
@@ -78,8 +84,23 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        string? notificationSetupError = null;
+        try
+        {
+            await UpdateNotificationService.RegisterScheduledCheckAsync();
+        }
+        catch (Exception exception) when (
+            exception is Win32Exception or InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            notificationSetupError = exception.Message;
+        }
+
         updateCheckTimer.Start();
         await CheckLiveUpdateAvailabilityAsync();
+        if (notificationSetupError is not null)
+        {
+            AppUpdateStatusText.Text += $" Background notifications could not be enabled: {notificationSetupError}";
+        }
     }
 
     private async void ScanButton_Click(object sender, RoutedEventArgs e)
@@ -227,7 +248,60 @@ public partial class MainWindow : Window
     }
 
     private async void CheckAppUpdates_Click(object sender, RoutedEventArgs e) =>
-        await CheckForAppUpdatesAsync();
+        await CheckForAppUpdatesAsync(forceRefresh: true);
+
+    private void SendFeatureSuggestion_Click(object sender, RoutedEventArgs e) =>
+        OpenGitHubFeedbackIssue(
+            FeatureSuggestionTextBox,
+            "Feature suggestion",
+            "enhancement",
+            includeDiagnostics: false);
+
+    private void SendBugReport_Click(object sender, RoutedEventArgs e) =>
+        OpenGitHubFeedbackIssue(
+            BugReportTextBox,
+            "Bug report",
+            "bug",
+            includeDiagnostics: true);
+
+    private void OpenGitHubFeedbackIssue(
+        System.Windows.Controls.TextBox input,
+        string issueType,
+        string label,
+        bool includeDiagnostics)
+    {
+        var description = input.Text.Trim();
+        if (description.Length == 0)
+        {
+            FeedbackStatusText.Text = $"Enter a description before sending a {issueType.ToLowerInvariant()}.";
+            input.Focus();
+            return;
+        }
+
+        var body = $"### {issueType}\n\n{description}";
+        if (includeDiagnostics)
+        {
+            body +=
+                $"\n\n### Diagnostics\n- Nova version: {AppUpdateService.CurrentVersion}\n- Windows version: {Environment.OSVersion.VersionString}";
+        }
+
+        body += "\n\nSubmitted from Nova Manager Feedback & Support. @alfeoscr1-glitch";
+        var issueUrl = new Uri(
+            "https://github.com/alfeoscr1-glitch/NovaManager/issues/new" +
+            $"?title={Uri.EscapeDataString($"[{issueType}] Nova Manager feedback")}" +
+            $"&body={Uri.EscapeDataString(body)}&labels={Uri.EscapeDataString(label)}");
+        try
+        {
+            _ = Process.Start(new ProcessStartInfo(issueUrl.AbsoluteUri) { UseShellExecute = true })
+                ?? throw new InvalidOperationException("Windows did not start a browser for the GitHub issue draft.");
+            FeedbackStatusText.Text =
+                "GitHub opened with a prefilled draft. Review it and select Create issue to submit; Nova has not sent it.";
+        }
+        catch (Exception exception) when (exception is Win32Exception or InvalidOperationException or UriFormatException)
+        {
+            FeedbackStatusText.Text = $"Could not open the GitHub issue draft: {exception.Message}";
+        }
+    }
 
     private void AppearanceComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -275,7 +349,10 @@ public partial class MainWindow : Window
         {
             var releaseNotes = await AppUpdateService.GetLatestReleaseNotesAsync(CancellationToken.None);
             ShowLatestReleaseNotes(releaseNotes);
-            LatestReleaseNotesStatusText.Text = $"Latest published release: {releaseNotes.Tag}.";
+            var warning = AppUpdateService.ApiWarningMessage;
+            LatestReleaseNotesStatusText.Text = string.IsNullOrWhiteSpace(warning)
+                ? $"Latest published release: {releaseNotes.Tag}."
+                : $"Latest published release: {releaseNotes.Tag}. {warning}";
         }
         catch (Exception exception)
         {
@@ -295,7 +372,7 @@ public partial class MainWindow : Window
         LatestReleaseNotesPanel.Visibility = Visibility.Visible;
     }
 
-    private async Task CheckForAppUpdatesAsync()
+    private async Task CheckForAppUpdatesAsync(bool forceRefresh = false)
     {
         if (isBusy)
         {
@@ -308,7 +385,7 @@ public partial class MainWindow : Window
         SetBusy(true, "Checking Nova updates…");
         try
         {
-            await RefreshUpdateAvailabilityAsync();
+            await RefreshUpdateAvailabilityAsync(forceRefresh);
         }
         catch (Exception exception)
         {
@@ -345,10 +422,10 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task RefreshUpdateAvailabilityAsync()
+    private async Task RefreshUpdateAvailabilityAsync(bool forceRefresh = false)
     {
-        var updateTask = AppUpdateService.CheckAsync(CancellationToken.None);
-        var missedCountTask = AppUpdateService.GetMissedReleaseCountAsync(CancellationToken.None);
+        var updateTask = AppUpdateService.CheckAsync(CancellationToken.None, forceRefresh);
+        var missedCountTask = AppUpdateService.GetMissedReleaseCountAsync(CancellationToken.None, forceRefresh);
         await Task.WhenAll(updateTask, missedCountTask);
 
         availableAppUpdate = await updateTask;
@@ -359,11 +436,13 @@ public partial class MainWindow : Window
             ? "Settings"
             : $"Settings — {missedCount} Nova update{(missedCount == 1 ? string.Empty : "s")} available";
         InstallAppUpdateButton.IsEnabled = availableAppUpdate is not null;
-        AppUpdateStatusText.Text = availableAppUpdate is null
+        var status = availableAppUpdate is null
             ? $"You’re up to date. Installed version: {AppUpdateService.CurrentVersion}."
             : availableAppUpdate.Version == AppUpdateService.CurrentVersion
                 ? $"A hotfix for Nova {availableAppUpdate.Version} is available (release {availableAppUpdate.Tag}). Download it when you’re ready."
                 : $"Version {availableAppUpdate.Version} is available (release {availableAppUpdate.Tag}). Download it when you’re ready.";
+        var apiWarning = AppUpdateService.ApiWarningMessage;
+        AppUpdateStatusText.Text = string.IsNullOrWhiteSpace(apiWarning) ? status : $"{status} {apiWarning}";
 
         if (availableAppUpdate is not null)
         {

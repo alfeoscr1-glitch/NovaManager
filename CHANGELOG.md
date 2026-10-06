@@ -1,5 +1,11 @@
 # Nova Manager changelog
 
+## 1.2.2 — Feature release
+
+- Added Settings feedback forms that open prefilled GitHub feature-suggestion and bug-report drafts; bug drafts include only Nova and Windows version diagnostics.
+- Added hourly, per-user update checks while Nova is closed, with a Windows notification that opens Settings and never installs automatically.
+- Reduced GitHub API traffic with conditional requests and a persistent Local AppData cache; rate limiting now preserves the last known release details and explains the status in Settings.
+
 ## 1.2.1 — Hotfix
 
 - Added a bridge patch so existing 1.2.0 installations can receive hotfixes even when the release keeps the same version tag.

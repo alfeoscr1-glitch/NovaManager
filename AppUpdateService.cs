@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -25,11 +26,20 @@ internal static class AppUpdateService
     private const string ReleasesApiUrl = "https://api.github.com/repos/alfeoscr1-glitch/NovaManager/releases?per_page=100";
     private const string AssetName = "NovaManager.exe";
     private const long MaximumDownloadBytes = 512L * 1024 * 1024;
+    private static readonly TimeSpan ApiCacheLifetime = TimeSpan.FromMinutes(15);
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> ApiLocks = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, string> ApiWarnings = new(StringComparer.Ordinal);
+    private static string ApiCacheDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "NovaSoftwareManager",
+        "release-cache");
     private static string LocalUpdatesDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "NovaSoftwareManager",
         "updates");
     private static readonly HttpClient Client = CreateHttpClient();
+
+    public static string ApiWarningMessage => string.Join(" ", ApiWarnings.Values.Distinct(StringComparer.Ordinal));
 
     public static Version CurrentVersion
     {
@@ -40,18 +50,9 @@ internal static class AppUpdateService
         }
     }
 
-    public static async Task<AppUpdateRelease?> CheckAsync(CancellationToken cancellationToken)
+    public static async Task<AppUpdateRelease?> CheckAsync(CancellationToken cancellationToken, bool forceRefresh = false)
     {
-        using var response = await Client.GetAsync(ReleaseApiUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.NotFound)
-        {
-            throw new InvalidOperationException(
-                "The configured public GitHub repository or its latest release was not found. Publish a public release before checking updates.");
-        }
-
-        response.EnsureSuccessStatusCode();
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+        using var document = await GetGitHubJsonAsync(ReleaseApiUrl, "latest-release", forceRefresh, cancellationToken);
         var release = document.RootElement;
         if (release.GetProperty("draft").GetBoolean() || release.GetProperty("prerelease").GetBoolean())
         {
@@ -111,16 +112,7 @@ internal static class AppUpdateService
 
     public static async Task<AppReleaseNotes> GetLatestReleaseNotesAsync(CancellationToken cancellationToken)
     {
-        using var response = await Client.GetAsync(ReleaseApiUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        if (response.StatusCode == HttpStatusCode.NotFound)
-        {
-            throw new InvalidOperationException(
-                "The configured public GitHub repository or its latest release was not found.");
-        }
-
-        response.EnsureSuccessStatusCode();
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+        using var document = await GetGitHubJsonAsync(ReleaseApiUrl, "latest-release", false, cancellationToken);
         var release = document.RootElement;
         if (release.GetProperty("draft").GetBoolean() || release.GetProperty("prerelease").GetBoolean())
         {
@@ -135,12 +127,9 @@ internal static class AppUpdateService
         return new AppReleaseNotes(version, tag, releaseName, notes);
     }
 
-    public static async Task<int> GetMissedReleaseCountAsync(CancellationToken cancellationToken)
+    public static async Task<int> GetMissedReleaseCountAsync(CancellationToken cancellationToken, bool forceRefresh = false)
     {
-        using var response = await Client.GetAsync(
-            ReleasesApiUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        response.EnsureSuccessStatusCode();
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStreamAsync(cancellationToken));
+        using var document = await GetGitHubJsonAsync(ReleasesApiUrl, "release-list", forceRefresh, cancellationToken);
         if (document.RootElement.ValueKind != JsonValueKind.Array)
         {
             throw new InvalidDataException("GitHub returned an invalid release list.");
@@ -203,6 +192,153 @@ internal static class AppUpdateService
 
         return newerReleaseCount;
     }
+
+    private static async Task<JsonDocument> GetGitHubJsonAsync(
+        string url,
+        string cacheKey,
+        bool forceRefresh,
+        CancellationToken cancellationToken)
+    {
+        var apiLock = ApiLocks.GetOrAdd(cacheKey, static _ => new SemaphoreSlim(1, 1));
+        await apiLock.WaitAsync(cancellationToken);
+        try
+        {
+            var cachePath = Path.Combine(ApiCacheDirectory, $"{cacheKey}.json");
+            CachedApiPayload? cached = null;
+            if (File.Exists(cachePath))
+            {
+                try
+                {
+                    var cachedText = await File.ReadAllTextAsync(cachePath, cancellationToken);
+                    cached = JsonSerializer.Deserialize<CachedApiPayload>(cachedText);
+                    if (cached is not null)
+                    {
+                        using var validatedCache = JsonDocument.Parse(cached.Json);
+                    }
+
+                    if (cached?.Warning is { Length: > 0 } cachedWarning)
+                    {
+                        ApiWarnings[cacheKey] = cachedWarning;
+                    }
+                }
+                catch (JsonException exception)
+                {
+                    cached = null;
+                    ApiWarnings[cacheKey] = $"The saved GitHub release cache is invalid and will be refreshed. {exception.Message}";
+                }
+            }
+
+            if (!forceRefresh && cached is not null &&
+                DateTimeOffset.UtcNow - cached.FetchedAtUtc < ApiCacheLifetime)
+            {
+                return JsonDocument.Parse(cached.Json);
+            }
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            if (cached?.ETag is { Length: > 0 } etag && EntityTagHeaderValue.TryParse(etag, out var parsedEtag))
+            {
+                request.Headers.IfNoneMatch.Add(parsedEtag);
+            }
+
+            try
+            {
+                using var response = await Client.SendAsync(
+                    request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                {
+                    throw new InvalidOperationException(
+                        "The configured public GitHub repository or release was not found. Publish a public release before checking updates.");
+                }
+
+                if (response.StatusCode == HttpStatusCode.NotModified && cached is not null)
+                {
+                    var refreshedCache = cached with { FetchedAtUtc = DateTimeOffset.UtcNow, Warning = null };
+                    await SaveApiCacheAsync(cachePath, cacheKey, refreshedCache, cancellationToken);
+                    ApiWarnings.TryRemove(cacheKey, out _);
+                    return JsonDocument.Parse(cached.Json);
+                }
+
+                if (response.StatusCode == HttpStatusCode.Forbidden)
+                {
+                    var resetText = response.Headers.TryGetValues("X-RateLimit-Reset", out var resetValues)
+                        ? resetValues.FirstOrDefault()
+                        : null;
+                    var resetMessage = long.TryParse(resetText, out var resetSeconds)
+                        ? $" GitHub's limit is expected to reset at {DateTimeOffset.FromUnixTimeSeconds(resetSeconds).ToLocalTime():t}."
+                        : string.Empty;
+                    var warning = cached is null
+                        ? $"GitHub rate-limited Nova's first release check; try again after the limit resets.{resetMessage}"
+                        : $"GitHub temporarily rate-limited update checks; showing the last successfully saved release data.{resetMessage}";
+                    ApiWarnings[cacheKey] = warning;
+                    if (cached is null)
+                    {
+                        throw new InvalidOperationException(warning);
+                    }
+
+                    await SaveApiCacheAsync(cachePath, cacheKey, cached with { Warning = warning }, cancellationToken);
+                    return JsonDocument.Parse(cached.Json);
+                }
+
+                response.EnsureSuccessStatusCode();
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                if (json.Length > 8 * 1024 * 1024)
+                {
+                    throw new InvalidDataException("GitHub returned an unexpectedly large release response.");
+                }
+
+                using var validatedDocument = JsonDocument.Parse(json);
+                var freshCache = new CachedApiPayload(
+                    json,
+                    response.Headers.ETag?.ToString(),
+                    DateTimeOffset.UtcNow,
+                    null);
+                await SaveApiCacheAsync(cachePath, cacheKey, freshCache, cancellationToken);
+                ApiWarnings.TryRemove(cacheKey, out _);
+                return JsonDocument.Parse(json);
+            }
+            catch (HttpRequestException exception) when (cached is not null)
+            {
+                ApiWarnings[cacheKey] =
+                    $"GitHub could not be reached; showing the last successfully saved release data. {exception.Message}";
+                await SaveApiCacheAsync(cachePath, cacheKey, cached with { Warning = ApiWarnings[cacheKey] }, cancellationToken);
+                return JsonDocument.Parse(cached.Json);
+            }
+            catch (TaskCanceledException exception) when (!cancellationToken.IsCancellationRequested && cached is not null)
+            {
+                ApiWarnings[cacheKey] =
+                    $"GitHub did not respond in time; showing the last successfully saved release data. {exception.Message}";
+                await SaveApiCacheAsync(cachePath, cacheKey, cached with { Warning = ApiWarnings[cacheKey] }, cancellationToken);
+                return JsonDocument.Parse(cached.Json);
+            }
+        }
+        finally
+        {
+            apiLock.Release();
+        }
+    }
+
+    private static async Task SaveApiCacheAsync(
+        string cachePath,
+        string cacheKey,
+        CachedApiPayload payload,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            Directory.CreateDirectory(ApiCacheDirectory);
+            await File.WriteAllTextAsync(
+                cachePath,
+                JsonSerializer.Serialize(payload),
+                cancellationToken);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            ApiWarnings[cacheKey] =
+                $"Nova could not save its GitHub response cache. Update checks may use more requests than usual. {exception.Message}";
+        }
+    }
+
+    private sealed record CachedApiPayload(string Json, string? ETag, DateTimeOffset FetchedAtUtc, string? Warning = null);
 
     private static async Task<string> GetCurrentExecutableDigestAsync(CancellationToken cancellationToken)
     {

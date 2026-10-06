@@ -739,6 +739,56 @@
                                            Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11"
                                            TextWrapping="Wrap"/>
                             </Border>
+
+                            <Border Style="{StaticResource Card}" Margin="0,16,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="FEEDBACK &amp; SUPPORT" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
+                                               FontSize="10" FontWeight="Bold"/>
+                                    <TextBlock Text="Help improve Nova" Foreground="{DynamicResource ThemeBrush_202A3B}"
+                                               FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
+                                    <TextBlock Text="Your message opens as a draft on GitHub. Review it and submit it there; Nova does not send it automatically."
+                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12"
+                                               Margin="0,6,0,14" TextWrapping="Wrap"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="16"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="SUGGEST A FEATURE" Foreground="{DynamicResource ThemeBrush_53627A}"
+                                                       FontSize="10" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                            <TextBox x:Name="FeatureSuggestionTextBox" MinHeight="100" MaxLength="5000"
+                                                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                                     VerticalContentAlignment="Top" Padding="10,8" Margin="0,0,0,10"
+                                                     Background="{DynamicResource ThemeBrush_F7F8FB}"
+                                                     Foreground="{DynamicResource ThemeBrush_202A3B}"
+                                                     BorderBrush="{DynamicResource ThemeBrush_E8ECF3}"
+                                                     ToolTip="Describe the feature or improvement you'd like"/>
+                                            <Button Content="Send suggestion" Click="SendFeatureSuggestion_Click"
+                                                    HorizontalAlignment="Left"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2">
+                                            <TextBlock Text="REPORT A BUG" Foreground="{DynamicResource ThemeBrush_53627A}"
+                                                       FontSize="10" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                            <TextBox x:Name="BugReportTextBox" MinHeight="100" MaxLength="5000"
+                                                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                                                     VerticalContentAlignment="Top" Padding="10,8" Margin="0,0,0,10"
+                                                     Background="{DynamicResource ThemeBrush_F7F8FB}"
+                                                     Foreground="{DynamicResource ThemeBrush_202A3B}"
+                                                     BorderBrush="{DynamicResource ThemeBrush_E8ECF3}"
+                                                     ToolTip="Describe what happened and what you expected"/>
+                                            <Button Content="Send bug report" Click="SendBugReport_Click"
+                                                    HorizontalAlignment="Left"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock Text="Please don't include passwords, access tokens, or other sensitive information. Bug drafts include only the Nova and Windows versions."
+                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11"
+                                               Margin="0,12,0,0" TextWrapping="Wrap"/>
+                                    <TextBlock x:Name="FeedbackStatusText" Foreground="{DynamicResource ThemeBrush_53627A}"
+                                               FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
                         </StackPanel>
                     </ScrollViewer>
                 </TabItem>
