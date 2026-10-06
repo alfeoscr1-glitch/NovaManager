@@ -30,6 +30,11 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer updateCheckTimer = new() { Interval = TimeSpan.FromMinutes(15) };
     private AppUpdateRelease? availableAppUpdate;
     private TempScanResult? lastTempScan;
+    private int? rememberedTempFileCount;
+    private long? rememberedTempBytes;
+    private DateTime? lastScanAt;
+    private DateTime? lastCleanupAt;
+    private string? lastCleanupSummary;
     private bool isBusy;
     private bool isLoadingLatestReleaseNotes;
     private bool isUpdatingTempSelection;
@@ -84,6 +89,47 @@ public partial class MainWindow : Window
         updateCheckTimer.Tick += UpdateCheckTimer_Tick;
         ShowStoragePanel(TempCleanupPanel);
         UpdateSectionChrome();
+        RestoreRememberedScan();
+    }
+
+    private void RestoreRememberedScan()
+    {
+        var snapshot = ScanMemory.Load();
+        if (snapshot is null)
+        {
+            return;
+        }
+
+        SetSoftware(snapshot.Software ?? []);
+        SetUpdates(snapshot.Updates ?? []);
+        rememberedTempFileCount = snapshot.TempFileCount;
+        rememberedTempBytes = snapshot.TempBytes;
+        lastScanAt = snapshot.LastScanAt;
+        lastCleanupAt = snapshot.LastCleanupAt;
+        lastCleanupSummary = snapshot.LastCleanupSummary;
+        if (lastScanAt is DateTime scannedAt)
+        {
+            LastScanText.Text = scannedAt.ToString("g");
+        }
+
+        if (lastCleanupSummary is not null && lastCleanupAt is DateTime cleanedAt)
+        {
+            CleanupStatusText.Text = $"Last cleanup ({cleanedAt:g}): {lastCleanupSummary}";
+        }
+
+        RefreshCounts();
+    }
+
+    private void RememberScan()
+    {
+        ScanMemory.Save(new ScanSnapshot(
+            lastScanAt,
+            software.ToList(),
+            updates.ToList(),
+            lastTempScan?.FileCount ?? rememberedTempFileCount,
+            lastTempScan?.TotalBytes ?? rememberedTempBytes,
+            lastCleanupAt,
+            lastCleanupSummary));
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -157,7 +203,9 @@ public partial class MainWindow : Window
         try
         {
             await scan();
-            LastScanText.Text = DateTime.Now.ToString("g");
+            lastScanAt = DateTime.Now;
+            LastScanText.Text = lastScanAt.Value.ToString("g");
+            RememberScan();
             StatusText.Text = $"{GetSectionName()} scan complete.";
         }
         catch (Exception exception)
@@ -590,6 +638,8 @@ public partial class MainWindow : Window
     private void SetTempScan(TempScanResult result)
     {
         lastTempScan = result;
+        rememberedTempFileCount = null;
+        rememberedTempBytes = null;
         tempFolders.Clear();
         tempFiles.Clear();
         cleanupCategories.Clear();
@@ -748,10 +798,13 @@ public partial class MainWindow : Window
             CleanupStatusText.Text =
                 $"Removed {result.DeletedFiles:N0} files ({FormatBytes(result.DeletedBytes)}). {result.Skipped:N0} item(s) were skipped.";
             StatusText.Text = "File cleanup finished.";
+            lastCleanupAt = DateTime.Now;
+            lastCleanupSummary = $"removed {result.DeletedFiles:N0} files ({FormatBytes(result.DeletedBytes)}).";
 
             var freshScan = await Task.Run(() => TempCleaner.Scan(CancellationToken.None));
             SetTempScan(freshScan);
             RefreshCounts();
+            RememberScan();
             var report = result.Errors
                 .Concat(freshScan.Errors.Select(error => $"Rescan: {error}"))
                 .Take(10)
@@ -1257,15 +1310,20 @@ public partial class MainWindow : Window
             ? "No updates were reported by the winget source."
             : $"{updates.Count:N0} available update(s) from the winget source.";
 
-        var scannedFiles = lastTempScan?.FileCount ?? 0;
-        var scannedBytes = lastTempScan?.TotalBytes ?? 0;
-        TempSizeText.Text = lastTempScan is null ? "—" : FormatBytes(scannedBytes);
-        TempCountText.Text = lastTempScan is null
-            ? "Scan to estimate"
-            : $"{scannedFiles:N0} file(s) found";
-        TempSummaryText.Text = lastTempScan is null
-            ? "Run a scan to see the removable file estimate."
-            : $"{scannedFiles:N0} file(s), {FormatBytes(scannedBytes)} estimated. Files may be locked or protected.";
+        var scannedFiles = lastTempScan?.FileCount ?? rememberedTempFileCount ?? 0;
+        var scannedBytes = lastTempScan?.TotalBytes ?? rememberedTempBytes ?? 0;
+        var hasTempScan = lastTempScan is not null || rememberedTempBytes is not null;
+        TempSizeText.Text = hasTempScan ? FormatBytes(scannedBytes) : "—";
+        TempCountText.Text = hasTempScan
+            ? $"{scannedFiles:N0} file(s) found"
+            : "Scan to estimate";
+        TempSummaryText.Text = hasTempScan
+            ? $"{scannedFiles:N0} file(s), {FormatBytes(scannedBytes)} estimated. Files may be locked or protected."
+            : "Run a scan to see the removable file estimate.";
+        if (lastCleanupSummary is not null && lastCleanupAt is DateTime cleanedAt)
+        {
+            TempSummaryText.Text += $" Last cleanup ({cleanedAt:g}): {lastCleanupSummary}";
+        }
         UpdateTempSelectionState();
     }
 
