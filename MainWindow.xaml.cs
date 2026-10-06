@@ -69,6 +69,7 @@ public partial class MainWindow : Window
         LatestReleaseNotesStatusText.Text = "Showing changelog bundled with this version. Checking GitHub for the latest release…";
         Loaded += async (_, _) => await RefreshLatestReleaseNotesAsync();
         Loaded += MainWindow_Loaded;
+        Closing += MainWindow_Closing;
         Closed += (_, _) =>
         {
             updateCheckTimer.Stop();
@@ -292,6 +293,7 @@ public partial class MainWindow : Window
         var title = $"[{issueType}] Nova Manager feedback";
         FeatureSuggestionButton.IsEnabled = false;
         BugReportButton.IsEnabled = false;
+        isFeedbackSubmissionInProgress = true;
         FeedbackStatusText.Text = "Sending your report to GitHub…";
         try
         {
@@ -304,18 +306,29 @@ public partial class MainWindow : Window
             input.Clear();
             FeedbackStatusText.Text = $"Submitted successfully. GitHub created the issue: {issueUrl}";
         }
-        catch (Exception exception) when (
-            exception is HttpRequestException or TaskCanceledException or JsonException or
-                InvalidOperationException or InvalidDataException or IOException or
-                UnauthorizedAccessException or CryptographicException or Win32Exception)
+        catch (Exception exception)
         {
             FeedbackStatusText.Text = $"Could not submit the report. No success was reported. {exception.Message}";
         }
         finally
         {
+            isFeedbackSubmissionInProgress = false;
             FeatureSuggestionButton.IsEnabled = true;
             BugReportButton.IsEnabled = true;
         }
+    }
+
+    private bool isFeedbackSubmissionInProgress;
+
+    private void MainWindow_Closing(object? sender, CancelEventArgs e)
+    {
+        if (!isFeedbackSubmissionInProgress)
+        {
+            return;
+        }
+
+        e.Cancel = true;
+        FeedbackStatusText.Text = "Nova will remain open until GitHub authorization and submission finish.";
     }
 
     private Task AuthorizeGitHubFeedbackAsync(string userCode, string verificationUri)

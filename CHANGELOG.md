@@ -7,6 +7,7 @@
 - Saved authorization is reused for subsequent submissions, and expiring GitHub access tokens are renewed with the saved refresh token.
 - Fixed authorization storage compatibility so existing saved tokens are found and migrated rather than starting a new Device Flow for each submission.
 - Kept automatic background update-check failures quiet; Nova retries on its regular interval without repeatedly surfacing transient GitHub errors.
+- Kept Nova open throughout GitHub authorization and report submission, and surfaced authorization failures in Settings instead of allowing them to terminate the application.
 
 ## 1.2.2 — Feature release
 
