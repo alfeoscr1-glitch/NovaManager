@@ -1,5 +1,10 @@
 # Nova Manager changelog
 
+## 1.0.10 — Hotfix
+
+- Redesigned Settings with a clearer release-notes header and distinct appearance and update sections.
+- Fixed successful updates leaving the staged executable behind and triggering a temporary-folder cleanup warning.
+
 ## 1.0.9 — Hotfix
 
 - Polished the Settings layout with clearer release-note, appearance, and application-update sections.

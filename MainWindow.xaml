@@ -556,7 +556,32 @@
                 <TabItem Header="Settings">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel Margin="0,10,0,12">
-                            <Border x:Name="LatestReleaseNotesPanel" Style="{StaticResource Card}" Margin="0,0,0,14">
+                            <Border Background="{DynamicResource ThemeBrush_172238}" CornerRadius="14"
+                                    Padding="22" Margin="0,0,0,16">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="NOVA PREFERENCES" Foreground="{DynamicResource ThemeBrush_B9C4FF}"
+                                                   FontSize="10" FontWeight="Bold"/>
+                                        <TextBlock Text="Make Nova yours" Foreground="White"
+                                                   FontSize="23" FontWeight="Bold" Margin="0,5,0,3"/>
+                                        <TextBlock Text="Personalize how Nova looks and keep track of the latest changes."
+                                                   Foreground="{DynamicResource ThemeBrush_ECF1FA}" FontSize="12"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    <Border Grid.Column="1" Width="48" Height="48" CornerRadius="14"
+                                            Background="{DynamicResource ThemeBrush_293754}"
+                                            VerticalAlignment="Center" Margin="16,0,0,0">
+                                        <TextBlock Text="⚙" Foreground="{DynamicResource ThemeBrush_B9C4FF}"
+                                                   FontSize="23" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                </Grid>
+                            </Border>
+
+                            <Border x:Name="LatestReleaseNotesPanel" Style="{StaticResource Card}" Margin="0,0,0,16">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -568,80 +593,93 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Latest changelog" Foreground="{DynamicResource ThemeBrush_202A3B}"
-                                               FontSize="19" FontWeight="Bold"/>
+                                    <StackPanel>
+                                        <TextBlock Text="WHAT'S NEW" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
+                                                   FontSize="10" FontWeight="Bold"/>
+                                        <TextBlock Text="Latest release notes" Foreground="{DynamicResource ThemeBrush_202A3B}"
+                                                   FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
+                                    </StackPanel>
                                     <Border Grid.Column="1" Background="{DynamicResource ThemeBrush_F0F3F8}"
-                                            CornerRadius="10" Padding="9,4" VerticalAlignment="Center">
+                                            CornerRadius="10" Padding="10,5" VerticalAlignment="Center">
                                         <TextBlock x:Name="LatestReleaseNotesTitleText" Foreground="{DynamicResource ThemeBrush_53627A}"
                                                    FontSize="11" FontWeight="SemiBold"/>
                                     </Border>
                                     <TextBlock x:Name="LatestReleaseNotesStatusText" Grid.Row="1" Grid.ColumnSpan="2"
                                                Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11"
-                                               Margin="0,6,0,10" TextWrapping="Wrap"/>
+                                               Margin="0,8,0,12" TextWrapping="Wrap"/>
                                     <Border Grid.Row="2" Grid.ColumnSpan="2" Height="1"
-                                            Background="{DynamicResource ThemeBrush_E8ECF3}" Margin="0,0,0,10"/>
+                                            Background="{DynamicResource ThemeBrush_E8ECF3}" Margin="0,0,0,12"/>
                                     <ScrollViewer Grid.Row="3" Grid.ColumnSpan="2" MaxHeight="180"
                                                   VerticalScrollBarVisibility="Auto">
                                         <TextBlock x:Name="LatestReleaseNotesText" Foreground="{DynamicResource ThemeBrush_39465B}"
-                                                   FontSize="12" LineHeight="19" TextWrapping="Wrap"/>
+                                                   FontSize="12" LineHeight="20" TextWrapping="Wrap"/>
                                     </ScrollViewer>
                                 </Grid>
                             </Border>
-                            <Border Style="{StaticResource Card}" Margin="0,0,0,14">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel VerticalAlignment="Center">
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1*"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="1.25*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <Border Grid.Column="0" Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <TextBlock Text="PERSONALIZATION" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
+                                                   FontSize="10" FontWeight="Bold"/>
                                         <TextBlock Text="Appearance" Foreground="{DynamicResource ThemeBrush_202A3B}"
-                                                   FontSize="17" FontWeight="Bold"/>
-                                        <TextBlock Text="Choose how Nova looks. Your preference is saved for next time."
+                                                   FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
+                                        <TextBlock Text="Choose the theme that feels right. Nova remembers your choice."
                                                    Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12"
-                                                   Margin="0,5,18,0" TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" MinWidth="160" VerticalAlignment="Center">
-                                        <TextBlock Text="THEME" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
-                                                   FontSize="10" FontWeight="SemiBold" Margin="2,0,0,5"/>
-                                        <ComboBox x:Name="AppearanceComboBox" Style="{StaticResource AppearanceComboBox}"
-                                                  MinWidth="160">
+                                                   Margin="0,6,0,18" TextWrapping="Wrap"/>
+                                        <TextBlock Text="COLOR THEME" Foreground="{DynamicResource ThemeBrush_53627A}"
+                                                   FontSize="10" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                                        <ComboBox x:Name="AppearanceComboBox" Style="{StaticResource AppearanceComboBox}">
                                             <ComboBoxItem Content="Light"/>
                                             <ComboBoxItem Content="Dark"/>
                                         </ComboBox>
+                                        <TextBlock Text="Applies immediately and is saved for your next session."
+                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11"
+                                                   Margin="0,12,0,0" TextWrapping="Wrap"/>
                                     </StackPanel>
-                                </Grid>
-                            </Border>
-                            <Border Style="{StaticResource Card}">
-                                <StackPanel>
-                                    <TextBlock Text="Application updates" Foreground="{DynamicResource ThemeBrush_202A3B}"
-                                               FontSize="17" FontWeight="Bold"/>
-                                    <TextBlock Text="Check Nova’s public GitHub Releases page for a newer version. Downloads are verified before installation."
-                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12"
-                                               Margin="0,5,0,14" TextWrapping="Wrap"/>
-                                    <Border Background="{DynamicResource ThemeBrush_F7F8FB}" CornerRadius="9"
-                                            Padding="12" Margin="0,0,0,12">
-                                        <StackPanel>
-                                            <TextBlock Text="INSTALLED VERSION" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
-                                                       FontSize="10" FontWeight="SemiBold"/>
-                                            <TextBlock x:Name="AppVersionText" Foreground="{DynamicResource ThemeBrush_202A3B}"
-                                                       FontSize="14" FontWeight="SemiBold" Margin="0,3,0,0"/>
-                                        </StackPanel>
-                                    </Border>
-                                    <TextBlock x:Name="AppUpdateStatusText" Text="Select Check for updates to look for a newer release."
-                                               Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="12"
-                                               Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                    <WrapPanel>
-                                        <Button x:Name="CheckAppUpdateButton" Content="Check for updates"
-                                                Click="CheckAppUpdates_Click" Margin="0,0,8,0"/>
-                                        <Button x:Name="InstallAppUpdateButton" Content="Download and install"
-                                                Click="InstallAppUpdate_Click" IsEnabled="False"
-                                                Style="{StaticResource SecondaryButton}"/>
-                                    </WrapPanel>
-                                </StackPanel>
-                            </Border>
-                            <Border Background="{DynamicResource ThemeBrush_F0F3F8}" CornerRadius="8"
-                                    Padding="12" Margin="0,12,0,0">
-                                <TextBlock Text="Nova restarts after installing an update. Updates remain a single EXE; temporary install files are stored separately."
+                                </Border>
+
+                                <Border Grid.Column="2" Style="{StaticResource Card}">
+                                    <StackPanel>
+                                        <TextBlock Text="STAY CURRENT" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
+                                                   FontSize="10" FontWeight="Bold"/>
+                                        <TextBlock Text="Application updates" Foreground="{DynamicResource ThemeBrush_202A3B}"
+                                                   FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
+                                        <TextBlock Text="Secure, verified updates delivered as a single Nova EXE."
+                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12"
+                                                   Margin="0,6,0,14" TextWrapping="Wrap"/>
+                                        <Border Background="{DynamicResource ThemeBrush_F7F8FB}" CornerRadius="9"
+                                                Padding="12" Margin="0,0,0,12">
+                                            <StackPanel>
+                                                <TextBlock Text="INSTALLED VERSION" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
+                                                           FontSize="10" FontWeight="SemiBold"/>
+                                                <TextBlock x:Name="AppVersionText" Foreground="{DynamicResource ThemeBrush_202A3B}"
+                                                           FontSize="15" FontWeight="Bold" Margin="0,3,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+                                        <TextBlock x:Name="AppUpdateStatusText" Text="Check GitHub for the latest Nova release."
+                                                   Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="12"
+                                                   Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                        <WrapPanel>
+                                            <Button x:Name="CheckAppUpdateButton" Content="Check for updates"
+                                                    Click="CheckAppUpdates_Click" Margin="0,0,8,0"/>
+                                            <Button x:Name="InstallAppUpdateButton" Content="Download and install"
+                                                    Click="InstallAppUpdate_Click" IsEnabled="False"
+                                                    Style="{StaticResource SecondaryButton}"/>
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <Border Background="{DynamicResource ThemeBrush_F0F3F8}" CornerRadius="9"
+                                    Padding="13" Margin="0,16,0,0">
+                                <TextBlock Text="Nova closes and reopens to finish installing an update. Temporary install files are cleaned up automatically."
                                            Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11"
                                            TextWrapping="Wrap"/>
                             </Border>

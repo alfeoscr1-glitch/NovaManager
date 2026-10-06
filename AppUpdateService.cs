@@ -472,6 +472,7 @@ internal static class AppUpdateInstaller
         Directory.Delete(updaterDirectory);
         if (Directory.Exists(stageDirectory))
         {
+            File.Delete(Path.Combine(stageDirectory, "NovaManager.exe"));
             Directory.Delete(stageDirectory);
         }
     }
