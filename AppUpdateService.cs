@@ -259,14 +259,7 @@ internal static class AppUpdateInstaller
         }
 
         var backupPath = Path.Combine(targetDirectory, $"NovaManager.exe.previous-{DateTime.UtcNow:yyyyMMddHHmmss}");
-        try
-        {
-            File.Replace(stagePath, targetPath, backupPath, ignoreMetadataErrors: true);
-        }
-        catch (PlatformNotSupportedException)
-        {
-            ReplaceWithRollback(stagePath, targetPath, backupPath);
-        }
+        ReplaceWithRetry(stagePath, targetPath, backupPath);
 
         var startInfo = new ProcessStartInfo
         {
@@ -376,6 +369,46 @@ internal static class AppUpdateInstaller
             File.Move(backupPath, targetPath);
             throw;
         }
+    }
+
+    private static void ReplaceWithRetry(string stagePath, string targetPath, string backupPath)
+    {
+        const int maxAttempts = 10;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Replace(stagePath, targetPath, backupPath, ignoreMetadataErrors: true);
+                return;
+            }
+            catch (PlatformNotSupportedException)
+            {
+                ReplaceWithRollback(stagePath, targetPath, backupPath);
+                return;
+            }
+            catch (Exception exception) when (IsTransientFileLock(exception))
+            {
+                if (attempt >= maxAttempts)
+                {
+                    throw new IOException(
+                        "Windows kept the update file locked. Close any other Nova Manager windows or update dialogs, then try again.",
+                        exception);
+                }
+
+                Thread.Sleep(TimeSpan.FromMilliseconds(500));
+            }
+        }
+    }
+
+    private static bool IsTransientFileLock(Exception exception)
+    {
+        if (exception is not (IOException or UnauthorizedAccessException))
+        {
+            return false;
+        }
+
+        var windowsError = unchecked((uint)exception.HResult) & 0xffff;
+        return windowsError is 5 or 32 or 33;
     }
 
     private static Process? TryGetProcess(int processId)
