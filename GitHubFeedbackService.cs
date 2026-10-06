@@ -16,7 +16,8 @@ internal static class GitHubFeedbackService
     private const string DeviceCodeUrl = "https://github.com/login/device/code";
     private const string AccessTokenUrl = "https://github.com/login/oauth/access_token";
     private const string IssuesUrl = "https://api.github.com/repos/alfeoscr1-glitch/NovaManager/issues";
-    private const string TokenFilePathName = "github-feedback-token.dat";
+    private const string TokenFilePathName = "github-feedback-authorization.dat";
+    private static readonly SemaphoreSlim AuthorizationLock = new(1, 1);
     private static readonly HttpClient Client = CreateHttpClient();
     private static string TokenFilePath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -37,16 +38,11 @@ internal static class GitHubFeedbackService
             throw new ArgumentOutOfRangeException(nameof(label), "The GitHub issue label is not supported.");
         }
 
-        var accessToken = await ReadAccessTokenAsync(cancellationToken);
-        if (accessToken is null)
-        {
-            accessToken = await AuthorizeAsync(authorizeUser, cancellationToken);
-        }
-
+        var authorization = await GetAuthorizationAsync(authorizeUser, cancellationToken);
         for (var attempt = 0; attempt < 2; attempt++)
         {
             using var request = new HttpRequestMessage(HttpMethod.Post, IssuesUrl);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authorization.AccessToken);
             request.Content = new StringContent(
                 JsonSerializer.Serialize(new { title, body, labels = new[] { label } }),
                 Encoding.UTF8,
@@ -56,8 +52,25 @@ internal static class GitHubFeedbackService
             var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
             if (response.StatusCode == HttpStatusCode.Unauthorized && attempt == 0)
             {
-                DeleteStoredAccessToken();
-                accessToken = await AuthorizeAsync(authorizeUser, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(authorization.RefreshToken))
+                {
+                    try
+                    {
+                        authorization = await RefreshAuthorizationAsync(authorization.RefreshToken, cancellationToken);
+                    }
+                    catch (GitHubFeedbackException exception) when (
+                        exception.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized)
+                    {
+                        DeleteStoredAuthorization();
+                        authorization = await AuthorizeAsync(authorizeUser, cancellationToken);
+                    }
+                }
+                else
+                {
+                    DeleteStoredAuthorization();
+                    authorization = await AuthorizeAsync(authorizeUser, cancellationToken);
+                }
+
                 continue;
             }
 
@@ -84,7 +97,48 @@ internal static class GitHubFeedbackService
         throw new InvalidOperationException("GitHub authorization did not succeed. Please try sending the report again.");
     }
 
-    private static async Task<string> AuthorizeAsync(
+    private static async Task<GitHubAuthorization> GetAuthorizationAsync(
+        Func<string, string, Task> authorizeUser,
+        CancellationToken cancellationToken)
+    {
+        await AuthorizationLock.WaitAsync(cancellationToken);
+        try
+        {
+            var savedAuthorization = await ReadAuthorizationAsync(cancellationToken);
+            if (savedAuthorization is not null)
+            {
+                if (savedAuthorization.ExpiresAtUtc > DateTimeOffset.UtcNow.AddMinutes(1))
+                {
+                    return savedAuthorization;
+                }
+
+                if (!string.IsNullOrWhiteSpace(savedAuthorization.RefreshToken))
+                {
+                    try
+                    {
+                        return await RefreshAuthorizationAsync(savedAuthorization.RefreshToken, cancellationToken);
+                    }
+                    catch (GitHubFeedbackException exception) when (
+                        exception.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Unauthorized)
+                    {
+                        DeleteStoredAuthorization();
+                    }
+                }
+                else if (savedAuthorization.ExpiresAtUtc == DateTimeOffset.MaxValue)
+                {
+                    return savedAuthorization;
+                }
+            }
+
+            return await AuthorizeAsync(authorizeUser, cancellationToken);
+        }
+        finally
+        {
+            AuthorizationLock.Release();
+        }
+    }
+
+    private static async Task<GitHubAuthorization> AuthorizeAsync(
         Func<string, string, Task> authorizeUser,
         CancellationToken cancellationToken)
     {
@@ -119,8 +173,9 @@ internal static class GitHubFeedbackService
                 ?? throw new InvalidDataException("GitHub returned an empty authorization response.");
             if (!string.IsNullOrWhiteSpace(tokenResult.AccessToken))
             {
-                await StoreAccessTokenAsync(tokenResult.AccessToken, cancellationToken);
-                return tokenResult.AccessToken;
+                var authorization = CreateAuthorization(tokenResult);
+                await StoreAuthorizationAsync(authorization, cancellationToken);
+                return authorization;
             }
 
             switch (tokenResult.Error)
@@ -176,36 +231,124 @@ internal static class GitHubFeedbackService
         return device;
     }
 
-    private static async Task<string?> ReadAccessTokenAsync(CancellationToken cancellationToken)
+    private static async Task<GitHubAuthorization> RefreshAuthorizationAsync(
+        string refreshToken,
+        CancellationToken cancellationToken)
+    {
+        using var request = new HttpRequestMessage(HttpMethod.Post, AccessTokenUrl)
+        {
+            Content = new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["client_id"] = ClientId,
+                ["grant_type"] = "refresh_token",
+                ["refresh_token"] = refreshToken
+            })
+        };
+        request.Headers.Accept.Clear();
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+        using var response = await Client.SendAsync(request, cancellationToken);
+        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+        var tokenResult = JsonSerializer.Deserialize<AccessTokenResponse>(responseBody);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw CreateAuthorizationException(response.StatusCode, responseBody);
+        }
+
+        if (tokenResult is null || !string.IsNullOrWhiteSpace(tokenResult.Error))
+        {
+            throw new GitHubFeedbackException(
+                $"GitHub could not refresh the saved authorization. {tokenResult?.ErrorDescription ?? tokenResult?.Error ?? "Try again."}",
+                HttpStatusCode.Unauthorized);
+        }
+
+        var authorization = CreateAuthorization(tokenResult);
+        if (string.IsNullOrWhiteSpace(authorization.AccessToken))
+        {
+            throw new InvalidDataException("GitHub returned no access token while refreshing the saved authorization.");
+        }
+
+        await StoreAuthorizationAsync(authorization, cancellationToken);
+        return authorization;
+    }
+
+    private static GitHubAuthorization CreateAuthorization(AccessTokenResponse tokenResult)
+    {
+        if (string.IsNullOrWhiteSpace(tokenResult.AccessToken))
+        {
+            throw new InvalidDataException("GitHub did not return an access token.");
+        }
+
+        var expiresAtUtc = tokenResult.ExpiresIn is > 0
+            ? DateTimeOffset.UtcNow.AddSeconds(tokenResult.ExpiresIn.Value)
+            : DateTimeOffset.MaxValue;
+        return new GitHubAuthorization(
+            tokenResult.AccessToken,
+            tokenResult.RefreshToken,
+            expiresAtUtc);
+    }
+
+    private static async Task<GitHubAuthorization?> ReadAuthorizationAsync(CancellationToken cancellationToken)
     {
         if (!File.Exists(TokenFilePath))
         {
             return null;
         }
 
-        var protectedToken = await File.ReadAllBytesAsync(TokenFilePath, cancellationToken);
-        var tokenBytes = Unprotect(protectedToken);
+        byte[] protectedAuthorization;
         try
         {
-            return Encoding.UTF8.GetString(tokenBytes);
+            protectedAuthorization = await File.ReadAllBytesAsync(TokenFilePath, cancellationToken);
+        }
+        catch (FileNotFoundException)
+        {
+            return null;
+        }
+
+        var authorizationBytes = Unprotect(protectedAuthorization);
+        try
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<GitHubAuthorization>(authorizationBytes)
+                    ?? throw new InvalidDataException("Nova's saved GitHub authorization file is empty.");
+            }
+            catch (JsonException)
+            {
+                // The earlier 1.2.2 build protected only the access token; preserve it and upgrade the stored format.
+                var legacyToken = Encoding.UTF8.GetString(authorizationBytes);
+                if (string.IsNullOrWhiteSpace(legacyToken))
+                {
+                    throw new InvalidDataException("Nova's saved GitHub authorization file is invalid.");
+                }
+
+                var legacyAuthorization = new GitHubAuthorization(
+                    legacyToken,
+                    null,
+                    DateTimeOffset.MaxValue);
+                await StoreAuthorizationAsync(legacyAuthorization, cancellationToken);
+                return legacyAuthorization;
+            }
         }
         finally
         {
-            CryptographicOperations.ZeroMemory(tokenBytes);
+            CryptographicOperations.ZeroMemory(authorizationBytes);
         }
     }
 
-    private static async Task StoreAccessTokenAsync(string accessToken, CancellationToken cancellationToken)
+    private static async Task StoreAuthorizationAsync(
+        GitHubAuthorization authorization,
+        CancellationToken cancellationToken)
     {
-        var tokenBytes = Encoding.UTF8.GetBytes(accessToken);
+        var authorizationBytes = JsonSerializer.SerializeToUtf8Bytes(authorization);
         byte[] protectedToken;
         try
         {
-            protectedToken = Protect(tokenBytes);
+            protectedToken = Protect(authorizationBytes);
         }
         finally
         {
-            CryptographicOperations.ZeroMemory(tokenBytes);
+            CryptographicOperations.ZeroMemory(authorizationBytes);
         }
 
         var directory = Path.GetDirectoryName(TokenFilePath)
@@ -227,7 +370,7 @@ internal static class GitHubFeedbackService
         }
     }
 
-    private static void DeleteStoredAccessToken()
+    private static void DeleteStoredAuthorization()
     {
         if (File.Exists(TokenFilePath))
         {
@@ -386,7 +529,15 @@ internal static class GitHubFeedbackService
     private sealed record AccessTokenResponse(
         [property: System.Text.Json.Serialization.JsonPropertyName("access_token")] string? AccessToken,
         [property: System.Text.Json.Serialization.JsonPropertyName("error")] string? Error,
-        [property: System.Text.Json.Serialization.JsonPropertyName("error_description")] string? ErrorDescription);
+        [property: System.Text.Json.Serialization.JsonPropertyName("error_description")] string? ErrorDescription,
+        [property: System.Text.Json.Serialization.JsonPropertyName("refresh_token")] string? RefreshToken,
+        [property: System.Text.Json.Serialization.JsonPropertyName("expires_in")] int? ExpiresIn,
+        [property: System.Text.Json.Serialization.JsonPropertyName("refresh_token_expires_in")] int? RefreshTokenExpiresIn);
+
+    private sealed record GitHubAuthorization(
+        string AccessToken,
+        string? RefreshToken,
+        DateTimeOffset ExpiresAtUtc);
 
     [DllImport("crypt32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
