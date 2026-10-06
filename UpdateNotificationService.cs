@@ -59,9 +59,14 @@ internal sealed class UpdateNotificationService : IDisposable
             $"Nova {release.Version} is ready. Open Settings to download and install it.",
             ToolTipIcon.Info);
         hideIconTimer.Stop();
-        hideIconTimer.Start();
+        if (HideIconAfterNotification)
+        {
+            hideIconTimer.Start();
+        }
         return true;
     }
+
+    public bool HideIconAfterNotification { get; init; } = true;
 
     public static async Task RegisterScheduledCheckAsync()
     {
@@ -108,7 +113,7 @@ internal sealed class UpdateNotificationService : IDisposable
             return;
         }
 
-        using var notificationService = new UpdateNotificationService();
+        using var notificationService = new UpdateNotificationService { HideIconAfterNotification = false };
         var clicked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         notificationService.NotificationClicked += (_, _) =>
         {
@@ -119,7 +124,7 @@ internal sealed class UpdateNotificationService : IDisposable
         };
         if (notificationService.NotifyIfNew(release))
         {
-            await Task.WhenAny(clicked.Task, Task.Delay(TimeSpan.FromSeconds(15)));
+            await Task.WhenAny(clicked.Task, Task.Delay(TimeSpan.FromMinutes(10)));
         }
     }
 

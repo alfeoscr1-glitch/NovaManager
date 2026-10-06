@@ -42,14 +42,10 @@ public partial class App : Application
             {
                 await UpdateNotificationService.CheckAndNotifyWhenClosedAsync();
             }
-            catch (Exception exception)
+            catch (Exception)
             {
+                // Background check failures are transient; stay silent and retry on the next scheduled run.
                 Environment.ExitCode = 1;
-                MessageBox.Show(
-                    $"Nova's background update check could not complete.{Environment.NewLine}{exception.Message}",
-                    "Nova update check failed",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
             }
             finally
             {

@@ -9,6 +9,7 @@
 - Kept automatic background update-check failures quiet; Nova retries on its regular interval without repeatedly surfacing transient GitHub errors.
 - Kept Nova open throughout GitHub authorization and report submission, and surfaced authorization failures in Settings instead of allowing them to terminate the application.
 - Fixed GitHub authorization storage failing on Windows because of an unsupported native memory-zeroing import; tokens now save and load correctly.
+- Made the closed-app update notification more reliable: background check failures are now silent (retried hourly), and the notification stays clickable for up to 10 minutes so it can open Nova's update settings.
 ## 1.2.2 — Feature release
 
 - Added Settings feature-suggestion and bug-report forms; bug reports include only Nova and Windows version diagnostics.
