@@ -19,6 +19,10 @@ internal sealed record AppUpdateRelease(
     string Sha256);
 
 internal sealed record AppReleaseNotes(Version Version, string Tag, string ReleaseName, string Notes);
+internal sealed record AppUpdateDownloadProgress(
+    long BytesReceived,
+    long? TotalBytes,
+    TimeSpan? EstimatedTimeRemaining);
 
 internal static class AppUpdateService
 {
@@ -409,7 +413,8 @@ internal static class AppUpdateService
 
     public static async Task<string> DownloadAndVerifyAsync(
         AppUpdateRelease release,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IProgress<AppUpdateDownloadProgress>? progress = null)
     {
         var targetPath = Environment.ProcessPath
             ?? throw new InvalidOperationException("Nova could not determine its executable path.");
@@ -434,6 +439,9 @@ internal static class AppUpdateService
                 throw new InvalidDataException("The update asset exceeds Nova's 512 MB safety limit.");
             }
 
+            var expectedBytes = response.Content.Headers.ContentLength;
+            var downloadTimer = Stopwatch.StartNew();
+            progress?.Report(new AppUpdateDownloadProgress(0, expectedBytes, null));
             await using var source = await response.Content.ReadAsStreamAsync(cancellationToken);
             using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
             var buffer = new byte[131072];
@@ -451,6 +459,12 @@ internal static class AppUpdateService
 
                     hash.AppendData(buffer, 0, bytesRead);
                     await destination.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                    var elapsedSeconds = downloadTimer.Elapsed.TotalSeconds;
+                    TimeSpan? remaining = expectedBytes is > 0 && elapsedSeconds >= 2
+                        ? TimeSpan.FromSeconds(Math.Max(0, (expectedBytes.Value - totalBytes) /
+                            Math.Max(totalBytes / elapsedSeconds, 1)))
+                        : null;
+                    progress?.Report(new AppUpdateDownloadProgress(totalBytes, expectedBytes, remaining));
                 }
 
                 await destination.FlushAsync(cancellationToken);
@@ -768,7 +782,9 @@ internal static class AppUpdateInstaller
             {
                 FileName = updaterPath,
                 Arguments = $"{ApplyArgument} \"{configPath}\"",
-                UseShellExecute = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
                 WorkingDirectory = updaterDirectory
             });
             return process ?? throw new InvalidOperationException("The Nova updater helper did not start.");

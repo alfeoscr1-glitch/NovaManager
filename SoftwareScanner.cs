@@ -86,8 +86,15 @@ internal static class SoftwareScanner
             warnings);
     }
 
-    public static async Task<IReadOnlyList<UpdateCandidate>> FindUpdatesAsync(CancellationToken cancellationToken)
+    public static async Task<IReadOnlyList<UpdateCandidate>> FindUpdatesAsync(
+        CancellationToken cancellationToken,
+        string source = "winget")
     {
+        if (source is not ("winget" or "msstore"))
+        {
+            throw new ArgumentOutOfRangeException(nameof(source), "Only the winget and Microsoft Store sources are supported.");
+        }
+
         var startInfo = new ProcessStartInfo
         {
             FileName = "winget.exe",
@@ -100,7 +107,8 @@ internal static class SoftwareScanner
         };
         foreach (var argument in new[]
                  {
-                     "upgrade", "--source", "winget", "--accept-source-agreements", "--locale", "en-US"
+                     "upgrade", "--source", source, "--accept-source-agreements", "--locale", "en-US",
+                     "--disable-interactivity"
                  })
         {
             startInfo.ArgumentList.Add(argument);
@@ -148,12 +156,13 @@ internal static class SoftwareScanner
                 $"winget update check failed (exit code {process.ExitCode}).{Environment.NewLine}{Limit(combined, 1200)}");
         }
 
-        return ParseUpgradeTable(output);
+        return ParseUpgradeTable(output, source);
     }
 
     public static async Task<int> RunUpdateAsync(UpdateCandidate update, CancellationToken cancellationToken)
     {
-        if (update.Id.Length > 160 || update.Id.Any(character =>
+        if (update.Source is not ("winget" or "msstore") ||
+            update.Id.Length > 160 || update.Id.Any(character =>
                 !(char.IsAsciiLetterOrDigit(character) || character is '.' or '-' or '_' or '+')))
         {
             throw new InvalidOperationException("The package ID contains unexpected characters; the update was not started.");
@@ -163,7 +172,7 @@ internal static class SoftwareScanner
         {
             FileName = "winget.exe",
             UseShellExecute = true,
-            Arguments = $"upgrade --id \"{update.Id}\" --source winget --exact",
+            Arguments = $"upgrade --id \"{update.Id}\" --source {update.Source} --exact",
             WorkingDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
         };
 
@@ -173,7 +182,7 @@ internal static class SoftwareScanner
         return process.ExitCode;
     }
 
-    private static IReadOnlyList<UpdateCandidate> ParseUpgradeTable(string output)
+    private static IReadOnlyList<UpdateCandidate> ParseUpgradeTable(string output, string source)
     {
         var lines = output.Replace("\uFEFF", string.Empty, StringComparison.Ordinal)
             .Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -240,7 +249,7 @@ internal static class SoftwareScanner
                 continue;
             }
 
-            result.Add(new UpdateCandidate(name, id, current, available));
+            result.Add(new UpdateCandidate(name, id, current, available, source));
         }
 
         return result;

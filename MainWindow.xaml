@@ -286,14 +286,44 @@
                     <Border Style="{StaticResource Card}" Margin="0,10,0,0">
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Top" Margin="0,0,0,14">
-                                <TextBlock Text="Updates outside Microsoft Store" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="18" FontWeight="Bold"/>
-                                <TextBlock Text="Candidates returned by the winget source, which is separate from the Microsoft Store catalog. Review each app and start its installer explicitly."
-                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,5,0,0" TextWrapping="Wrap"/>
+                                <TextBlock Text="Available updates" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="18" FontWeight="Bold"/>
+                                <TextBlock Text="Scans Nova Manager, winget, Microsoft Store packages and Windows Update. App updates remain under your control; Windows updates are never installed here."
+                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,5,0,10" TextWrapping="Wrap"/>
+                                <Border Background="{DynamicResource ThemeBrush_F7F8FB}" CornerRadius="9" Padding="12" Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Nova Manager" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="12" FontWeight="Bold"/>
+                                            <TextBlock x:Name="NovaUpdateScanStatusText" Text="Scan to check for a Nova update."
+                                                       Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="Nova update settings" Style="{StaticResource SecondaryButton}"
+                                                VerticalAlignment="Center" Click="OpenNovaUpdateSettings_Click"/>
+                                    </Grid>
+                                </Border>
+                                <Border Background="{DynamicResource ThemeBrush_F7F8FB}" CornerRadius="9" Padding="12" Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="Windows Update" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="12" FontWeight="Bold"/>
+                                            <TextBlock x:Name="WindowsUpdateScanStatusText" Text="Scan to check Windows Update."
+                                                       Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                        <Button x:Name="OpenWindowsUpdateButton" Grid.Column="1" Content="Open Windows Update"
+                                                Style="{StaticResource SecondaryButton}" VerticalAlignment="Center"
+                                                Visibility="Collapsed" Click="OpenWindowsUpdate_Click"/>
+                                    </Grid>
+                                </Border>
+                                <TextBlock x:Name="StoreUpdateScanStatusText"
+                                           Text="Microsoft Store updates are checked through the Windows Package Manager Store source."
+                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11" Margin="0,0,0,4"
+                                           TextWrapping="Wrap"/>
                             </StackPanel>
                             <DataGrid x:Name="UpdatesGrid" ItemsSource="{Binding Updates}">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="APPLICATION" Binding="{Binding Name}" Width="2*"/>
                                     <DataGridTextColumn Header="PACKAGE ID" Binding="{Binding Id}" Width="1.4*"/>
+                                    <DataGridTextColumn Header="SOURCE" Binding="{Binding Source}" Width="105"/>
                                     <DataGridTextColumn Header="CURRENT" Binding="{Binding CurrentVersion}" Width="120"/>
                                     <DataGridTextColumn Header="AVAILABLE" Binding="{Binding AvailableVersion}" Width="120"/>
                                     <DataGridTemplateColumn Header="ACTION" Width="145">
@@ -722,6 +752,11 @@
                                         <TextBlock x:Name="AppUpdateStatusText" Text="Check GitHub for the latest Nova release."
                                                    Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="12"
                                                    Margin="0,0,0,14" TextWrapping="Wrap"/>
+                                        <ProgressBar x:Name="AppUpdateProgressBar" Minimum="0" Maximum="100" Height="8"
+                                                     Visibility="Collapsed" Margin="0,0,0,6"/>
+                                        <TextBlock x:Name="AppUpdateProgressText" Foreground="{DynamicResource ThemeBrush_53627A}"
+                                                   FontSize="11" Margin="0,0,0,12" TextWrapping="Wrap"
+                                                   Visibility="Collapsed"/>
                                         <WrapPanel>
                                             <Button x:Name="CheckAppUpdateButton" Content="Check for updates"
                                                     Click="CheckAppUpdates_Click" Margin="0,0,8,0"/>

@@ -9,7 +9,12 @@ public sealed record InstalledScanResult(
     IReadOnlyList<InstalledSoftware> Items,
     IReadOnlyList<string> Warnings);
 
-public sealed record UpdateCandidate(string Name, string Id, string CurrentVersion, string AvailableVersion);
+public sealed record UpdateCandidate(
+    string Name,
+    string Id,
+    string CurrentVersion,
+    string AvailableVersion,
+    string Source = "winget");
 
 public sealed class TempFileResult : INotifyPropertyChanged
 {

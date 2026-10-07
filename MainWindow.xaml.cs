@@ -281,9 +281,113 @@ public partial class MainWindow : Window
     {
         updates.Clear();
         RefreshCounts();
-        var result = await SoftwareScanner.FindUpdatesAsync(CancellationToken.None);
-        SetUpdates(result);
+        NovaUpdateScanStatusText.Text = "Checking GitHub for the latest Nova release…";
+        StoreUpdateScanStatusText.Text = "Checking Microsoft Store app updates…";
+        WindowsUpdateScanStatusText.Text = "Checking Windows Update…";
+        OpenWindowsUpdateButton.Visibility = Visibility.Collapsed;
+
+        var wingetTask = SoftwareScanner.FindUpdatesAsync(CancellationToken.None);
+        var storeTask = SoftwareScanner.FindUpdatesAsync(CancellationToken.None, "msstore");
+        var windowsTask = WindowsUpdateService.CheckAvailableAsync();
+        var novaTask = RefreshUpdateAvailabilityAsync(forceRefresh: true);
+        await Task.WhenAll(
+            ObserveScanTaskAsync(wingetTask),
+            ObserveScanTaskAsync(storeTask),
+            ObserveScanTaskAsync(windowsTask),
+            ObserveScanTaskAsync(novaTask));
+
+        var errors = new List<string>();
+        var updateResults = new List<UpdateCandidate>();
+        if (wingetTask.IsCompletedSuccessfully)
+        {
+            updateResults.AddRange(wingetTask.Result);
+        }
+        else
+        {
+            errors.Add(GetScanTaskError(wingetTask, "winget update check failed."));
+        }
+
+        if (storeTask.IsCompletedSuccessfully)
+        {
+            updateResults.AddRange(storeTask.Result);
+            StoreUpdateScanStatusText.Text = storeTask.Result.Count == 0
+                ? "No Microsoft Store updates were reported by the Store source."
+                : $"{storeTask.Result.Count:N0} Microsoft Store update(s) available.";
+        }
+        else
+        {
+            var error = GetScanTaskError(storeTask, "Microsoft Store update check failed.");
+            StoreUpdateScanStatusText.Text = error;
+            errors.Add(error);
+        }
+
+        if (windowsTask.IsCompletedSuccessfully)
+        {
+            var available = windowsTask.Result.Titles;
+            WindowsUpdateScanStatusText.Text = available.Count == 0
+                ? "Windows Update reports that your PC is up to date."
+                : $"{available.Count:N0} Windows update(s) available: {string.Join("; ", available.Take(4))}" +
+                  (available.Count > 4 ? "; …" : string.Empty);
+            OpenWindowsUpdateButton.Visibility = available.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        else
+        {
+            var error = GetScanTaskError(windowsTask, "Windows Update check failed.");
+            WindowsUpdateScanStatusText.Text = error;
+            errors.Add(error);
+        }
+
+        if (novaTask.IsCompletedSuccessfully)
+        {
+            NovaUpdateScanStatusText.Text = availableAppUpdate is null
+                ? $"No Nova update available. Installed version: {AppUpdateService.CurrentVersion}."
+                : $"Nova {availableAppUpdate.Version} is available (release {availableAppUpdate.Tag}).";
+        }
+        else
+        {
+            var error = GetScanTaskError(novaTask, "Nova Manager update check failed.");
+            NovaUpdateScanStatusText.Text = error;
+            errors.Add(error);
+        }
+
+        SetUpdates(updateResults.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase));
         RefreshCounts();
+        ThrowScanWarnings(errors);
+    }
+
+    private static async Task ObserveScanTaskAsync(Task task)
+    {
+        try
+        {
+            await task;
+        }
+        catch
+        {
+        }
+    }
+
+    private static string GetScanTaskError(Task task, string message)
+    {
+        var exception = task.Exception?.GetBaseException();
+        return exception is null ? message : $"{message} {exception.Message}";
+    }
+
+    private void OpenNovaUpdateSettings_Click(object sender, RoutedEventArgs e)
+    {
+        MainTabs.SelectedIndex = 4;
+    }
+
+    private void OpenWindowsUpdate_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo("ms-settings:windowsupdate") { UseShellExecute = true });
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            MessageBox.Show(this, exception.Message, "Could not open Windows Update",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
     }
 
     private async Task ScanTemporaryFoldersAsync()
@@ -563,9 +667,40 @@ public partial class MainWindow : Window
         {
             var release = availableAppUpdate;
             AppUpdateStatusText.Text = $"Downloading and verifying Nova {release.Version}…";
+            AppUpdateProgressBar.Value = 0;
+            AppUpdateProgressBar.IsIndeterminate = true;
+            AppUpdateProgressBar.Visibility = Visibility.Visible;
+            AppUpdateProgressText.Text = "Preparing secure download…";
+            AppUpdateProgressText.Visibility = Visibility.Visible;
+            var progress = new Progress<AppUpdateDownloadProgress>(downloadProgress =>
+            {
+                if (downloadProgress.TotalBytes is > 0)
+                {
+                    var percentage = Math.Clamp(
+                        downloadProgress.BytesReceived * 100d / downloadProgress.TotalBytes.Value, 0, 100);
+                    AppUpdateProgressBar.IsIndeterminate = false;
+                    AppUpdateProgressBar.Value = percentage;
+                    var remaining = downloadProgress.EstimatedTimeRemaining is TimeSpan time
+                        ? $" About {time:mm\\:ss} remaining."
+                        : string.Empty;
+                    AppUpdateProgressText.Text =
+                        $"Downloading: {percentage:0}% ({FormatBytes(downloadProgress.BytesReceived)} of " +
+                        $"{FormatBytes(downloadProgress.TotalBytes.Value)}).{remaining}";
+                }
+                else
+                {
+                    AppUpdateProgressBar.IsIndeterminate = true;
+                    AppUpdateProgressText.Text =
+                        $"Downloading: {FormatBytes(downloadProgress.BytesReceived)} received; total size unavailable.";
+                }
+            });
             var executablePath = Environment.ProcessPath
                 ?? throw new InvalidOperationException("Nova could not determine its executable path.");
-            var stagePath = await AppUpdateService.DownloadAndVerifyAsync(release, CancellationToken.None);
+            var stagePath = await AppUpdateService.DownloadAndVerifyAsync(
+                release, CancellationToken.None, progress);
+            AppUpdateProgressBar.IsIndeterminate = false;
+            AppUpdateProgressBar.Value = 100;
+            AppUpdateProgressText.Text = "Download verified. Preparing installation…";
             AppUpdateInstaller.StartUpdater(stagePath, executablePath, Environment.ProcessId, release);
             AppUpdateStatusText.Text = "Update verified. Nova is closing to install it, then will restart.";
             Application.Current.Shutdown();
@@ -575,6 +710,8 @@ public partial class MainWindow : Window
             AppUpdateStatusText.Text = $"Update could not be installed: {exception.Message}";
             MessageBox.Show(this, exception.Message, "Could not install Nova update",
                 MessageBoxButton.OK, MessageBoxImage.Error);
+            AppUpdateProgressBar.Visibility = Visibility.Collapsed;
+            AppUpdateProgressText.Visibility = Visibility.Collapsed;
             SetBusy(false, AppUpdateStatusText.Text);
         }
     }
