@@ -11,7 +11,7 @@ internal static class DeveloperModeService
     private const int PasswordIterations = 600_000;
     private const string UnlockMarker = "Nova Manager developer mode unlocked v1";
     private static readonly byte[] PasswordSalt = Convert.FromBase64String("+2imiVnebuE/PZEgln0lcA==");
-    private static readonly byte[] PasswordHash = Convert.FromBase64String("rqFVHfe76+9zWo4akmgY0rsWPWwiCs9y1dS1QY3onpQ=");
+    private static readonly byte[] PasswordHash = Convert.FromBase64String("HNpj0c0GLi0GTky5sphhFcXLY0g68xhxm357c0KktQY=");
     private static readonly byte[] Entropy = Encoding.UTF8.GetBytes("Nova Manager developer access marker");
     private static readonly string MarkerPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
