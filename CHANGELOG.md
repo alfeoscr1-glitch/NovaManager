@@ -2,6 +2,9 @@
 
 ## 1.2.3 — Hotfix
 
+- Automatic GitHub release checks now run every 10 minutes while Nova is open and through the existing scheduled task while it is closed. Only automatic checks trigger the Windows update notification; manual checks continue to report update availability without sending that notification.
+- Serialized notification deduplication across Nova's open and scheduled processes so a release is only notified once when both checks run at the same time.
+- Reduced the shared release API cache lifetime below the check interval so scheduled and in-app checks do not reuse stale release data for an entire polling interval.
 - The Updates scan now checks Nova Manager releases, winget updates, Microsoft Store updates available from its Store source, and Windows Update availability. Windows updates are not installed; Nova offers a button to open Windows Update Settings.
 - Nova's existing update download now displays percentage progress and a reliable remaining-time estimate when GitHub provides the asset size. The existing updater helper runs without showing a command window.
 

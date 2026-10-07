@@ -30,7 +30,7 @@ internal static class AppUpdateService
     private const string ReleasesApiUrl = "https://api.github.com/repos/alfeoscr1-glitch/NovaManager/releases?per_page=100";
     private const string AssetName = "NovaManager.exe";
     private const long MaximumDownloadBytes = 512L * 1024 * 1024;
-    private static readonly TimeSpan ApiCacheLifetime = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan ApiCacheLifetime = TimeSpan.FromMinutes(5);
     private static readonly ConcurrentDictionary<string, SemaphoreSlim> ApiLocks = new(StringComparer.Ordinal);
     private static readonly ConcurrentDictionary<string, string> ApiWarnings = new(StringComparer.Ordinal);
     private static string ApiCacheDirectory => Path.Combine(

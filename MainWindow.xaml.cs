@@ -27,7 +27,7 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<StorageEntryInfo> storageFolders = new();
     private readonly ObservableCollection<ShortcutInfo> shortcuts = new();
     private readonly UpdateNotificationService updateNotificationService = new();
-    private readonly DispatcherTimer updateCheckTimer = new() { Interval = TimeSpan.FromMinutes(15) };
+    private readonly DispatcherTimer updateCheckTimer = new() { Interval = TimeSpan.FromMinutes(10) };
     private AppUpdateRelease? availableAppUpdate;
     private TempScanResult? lastTempScan;
     private int? rememberedTempFileCount;
@@ -289,7 +289,7 @@ public partial class MainWindow : Window
         var wingetTask = SoftwareScanner.FindUpdatesAsync(CancellationToken.None);
         var storeTask = SoftwareScanner.FindUpdatesAsync(CancellationToken.None, "msstore");
         var windowsTask = WindowsUpdateService.CheckAvailableAsync();
-        var novaTask = RefreshUpdateAvailabilityAsync(forceRefresh: true);
+        var novaTask = RefreshUpdateAvailabilityAsync(forceRefresh: true, notifyIfNew: false);
         await Task.WhenAll(
             ObserveScanTaskAsync(wingetTask),
             ObserveScanTaskAsync(storeTask),
@@ -588,7 +588,7 @@ public partial class MainWindow : Window
         SetBusy(true, "Checking Nova updates…");
         try
         {
-            await RefreshUpdateAvailabilityAsync(forceRefresh);
+            await RefreshUpdateAvailabilityAsync(forceRefresh, notifyIfNew: false);
         }
         catch (Exception exception)
         {
@@ -627,7 +627,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async Task RefreshUpdateAvailabilityAsync(bool forceRefresh = false)
+    private async Task RefreshUpdateAvailabilityAsync(bool forceRefresh = false, bool notifyIfNew = true)
     {
         var updateTask = AppUpdateService.CheckAsync(CancellationToken.None, forceRefresh);
         var missedCountTask = AppUpdateService.GetMissedReleaseCountAsync(CancellationToken.None, forceRefresh);
@@ -649,7 +649,7 @@ public partial class MainWindow : Window
         var apiWarning = AppUpdateService.ApiWarningMessage;
         AppUpdateStatusText.Text = string.IsNullOrWhiteSpace(apiWarning) ? status : $"{status} {apiWarning}";
 
-        if (availableAppUpdate is not null)
+        if (notifyIfNew && availableAppUpdate is not null)
         {
             updateNotificationService.NotifyIfNew(availableAppUpdate);
         }

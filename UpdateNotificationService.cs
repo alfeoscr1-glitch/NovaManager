@@ -11,6 +11,7 @@ internal sealed class UpdateNotificationService : IDisposable
         "NovaSoftwareManager",
         "last-notified-release.txt");
     private const string ScheduledTaskName = "NovaSoftwareManagerUpdateNotification";
+    private const string NotificationMutexName = @"Local\NovaSoftwareManagerUpdateNotification";
 
     private readonly NotifyIcon notifyIcon = new()
     {
@@ -38,32 +39,59 @@ internal sealed class UpdateNotificationService : IDisposable
 
     public bool NotifyIfNew(AppUpdateRelease release)
     {
-        var notificationKey = $"{release.Tag}:{release.Sha256}";
-        var lastNotifiedRelease = File.Exists(LastNotifiedReleasePath)
-            ? File.ReadAllText(LastNotifiedReleasePath).Trim()
-            : string.Empty;
-        if (lastNotifiedRelease.Equals(notificationKey, StringComparison.OrdinalIgnoreCase))
+        using var notificationMutex = new Mutex(false, NotificationMutexName);
+        var mutexAcquired = false;
+        try
         {
-            return false;
+            try
+            {
+                mutexAcquired = notificationMutex.WaitOne(TimeSpan.FromSeconds(10));
+            }
+            catch (AbandonedMutexException)
+            {
+                mutexAcquired = true;
+            }
+
+            if (!mutexAcquired)
+            {
+                return false;
+            }
+
+            var notificationKey = $"{release.Tag}:{release.Sha256}";
+            var lastNotifiedRelease = File.Exists(LastNotifiedReleasePath)
+                ? File.ReadAllText(LastNotifiedReleasePath).Trim()
+                : string.Empty;
+            if (lastNotifiedRelease.Equals(notificationKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var directory = Path.GetDirectoryName(LastNotifiedReleasePath)
+                ?? throw new InvalidOperationException("Nova could not determine the update notification settings folder.");
+            Directory.CreateDirectory(directory);
+
+            notifyIcon.Visible = true;
+            notifyIcon.ShowBalloonTip(
+                10_000,
+                "Nova update available",
+                $"Nova {release.Version} is ready. Open Settings to download and install it.",
+                ToolTipIcon.Info);
+            File.WriteAllText(LastNotifiedReleasePath, notificationKey);
+            hideIconTimer.Stop();
+            if (HideIconAfterNotification)
+            {
+                hideIconTimer.Start();
+            }
+
+            return true;
         }
-
-        var directory = Path.GetDirectoryName(LastNotifiedReleasePath)
-            ?? throw new InvalidOperationException("Nova could not determine the update notification settings folder.");
-        Directory.CreateDirectory(directory);
-        File.WriteAllText(LastNotifiedReleasePath, notificationKey);
-
-        notifyIcon.Visible = true;
-        notifyIcon.ShowBalloonTip(
-            10_000,
-            "Nova update available",
-            $"Nova {release.Version} is ready. Open Settings to download and install it.",
-            ToolTipIcon.Info);
-        hideIconTimer.Stop();
-        if (HideIconAfterNotification)
+        finally
         {
-            hideIconTimer.Start();
+            if (mutexAcquired)
+            {
+                notificationMutex.ReleaseMutex();
+            }
         }
-        return true;
     }
 
     public bool HideIconAfterNotification { get; init; } = true;
@@ -82,7 +110,7 @@ internal sealed class UpdateNotificationService : IDisposable
         };
         foreach (var argument in new[]
         {
-            "/Create", "/SC", "MINUTE", "/MO", "15", "/TN", ScheduledTaskName,
+            "/Create", "/SC", "MINUTE", "/MO", "10", "/TN", ScheduledTaskName,
             "/TR", taskAction, "/F", "/IT", "/RL", "LIMITED"
         })
         {
