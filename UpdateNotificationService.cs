@@ -96,6 +96,18 @@ internal sealed class UpdateNotificationService : IDisposable
 
     public bool HideIconAfterNotification { get; init; } = true;
 
+    public void ShowDeveloperTestNotification()
+    {
+        notifyIcon.Visible = true;
+        notifyIcon.ShowBalloonTip(
+            10_000,
+            "Nova notification test",
+            "Windows notifications are working for this Nova installation.",
+            ToolTipIcon.Info);
+        hideIconTimer.Stop();
+        hideIconTimer.Start();
+    }
+
     public static async Task RegisterScheduledCheckAsync()
     {
         var executablePath = Environment.ProcessPath

@@ -645,8 +645,16 @@
                                     <StackPanel>
                                         <TextBlock Text="NOVA PREFERENCES" Foreground="{DynamicResource ThemeBrush_B9C4FF}"
                                                    FontSize="10" FontWeight="Bold"/>
-                                        <TextBlock Text="Make Nova yours" Foreground="White"
-                                                   FontSize="23" FontWeight="Bold" Margin="0,5,0,3"/>
+                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Text="Make Nova yours" Foreground="White"
+                                                       FontSize="23" FontWeight="Bold" Margin="0,5,10,3"/>
+                                            <Button Content="&lt;/&gt;" Padding="9,5" MinWidth="42"
+                                                    Background="{DynamicResource ThemeBrush_293754}"
+                                                    Foreground="{DynamicResource ThemeBrush_B9C4FF}"
+                                                    BorderBrush="{DynamicResource ThemeBrush_53627A}"
+                                                    ToolTip="Developer mode — intended for the Nova developer only."
+                                                    Click="DeveloperMode_Click"/>
+                                        </StackPanel>
                                         <TextBlock Text="Personalize how Nova looks and keep track of the latest changes."
                                                    Foreground="{DynamicResource ThemeBrush_ECF1FA}" FontSize="12"
                                                    TextWrapping="Wrap"/>
@@ -658,6 +666,25 @@
                                                    FontSize="23" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                 </Grid>
+                            </Border>
+
+                            <Border x:Name="DeveloperModePanel" Style="{StaticResource Card}"
+                                    Margin="0,0,0,16" Visibility="Collapsed">
+                                <StackPanel>
+                                    <TextBlock Text="DEVELOPER MODE / ADMIN MODE"
+                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" FontWeight="Bold"/>
+                                    <TextBlock Text="Developer notifications" Foreground="{DynamicResource ThemeBrush_202A3B}"
+                                               FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
+                                    <TextBlock Text="This area is for the Nova developer and is not intended for ordinary users. This local test only sends a notification to this PC; Nova does not have infrastructure to broadcast a notification to all installations."
+                                               Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="12"
+                                               Margin="0,7,0,14" TextWrapping="Wrap"/>
+                                    <Button x:Name="DeveloperNotificationTestButton"
+                                            Content="Send test notification to this PC"
+                                            HorizontalAlignment="Left" Click="DeveloperNotificationTest_Click"/>
+                                    <TextBlock x:Name="DeveloperNotificationStatusText"
+                                               Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="11"
+                                               Margin="0,10,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
                             </Border>
 
                             <Border x:Name="LatestReleaseNotesPanel" Style="{StaticResource Card}" Margin="0,0,0,16">

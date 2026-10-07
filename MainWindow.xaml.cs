@@ -527,6 +527,99 @@ public partial class MainWindow : Window
         }
     }
 
+    private void DeveloperMode_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (!DeveloperModeService.IsAuthorized())
+            {
+                var passwordBox = new PasswordBox
+                {
+                    MinWidth = 280,
+                    Margin = new Thickness(0, 8, 0, 14),
+                    PasswordChar = '●'
+                };
+                var promptContent = new StackPanel { Margin = new Thickness(22) };
+                var promptMessage = new TextBlock
+                {
+                    Text = "Developer Mode is intended for the Nova developer only. Enter the developer password to unlock this area on this Windows account.",
+                    TextWrapping = TextWrapping.Wrap,
+                    Margin = new Thickness(0, 0, 0, 6)
+                };
+                promptMessage.SetResourceReference(TextBlock.ForegroundProperty, "ThemeBrush_53627A");
+                promptContent.Children.Add(promptMessage);
+                promptContent.Children.Add(passwordBox);
+
+                var buttons = new StackPanel
+                {
+                    Orientation = System.Windows.Controls.Orientation.Horizontal,
+                    HorizontalAlignment = System.Windows.HorizontalAlignment.Right
+                };
+                var cancelButton = new Button { Content = "Cancel", IsCancel = true, Margin = new Thickness(0, 0, 8, 0) };
+                var unlockButton = new Button { Content = "Unlock", IsDefault = true };
+                buttons.Children.Add(cancelButton);
+                buttons.Children.Add(unlockButton);
+                promptContent.Children.Add(buttons);
+
+                var prompt = new Window
+                {
+                    Title = "Developer Mode",
+                    Owner = this,
+                    Width = 390,
+                    SizeToContent = SizeToContent.Height,
+                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
+                    ResizeMode = ResizeMode.NoResize,
+                    Content = promptContent
+                };
+                prompt.SetResourceReference(Window.BackgroundProperty, "ThemeBrush_FFFFFF");
+                unlockButton.Click += (_, _) => prompt.DialogResult = true;
+                prompt.Loaded += (_, _) => passwordBox.Focus();
+                if (prompt.ShowDialog() != true)
+                {
+                    passwordBox.Clear();
+                    return;
+                }
+
+                var validPassword = DeveloperModeService.TryUnlock(passwordBox.Password);
+                passwordBox.Clear();
+                if (!validPassword)
+                {
+                    MessageBox.Show(this, "The developer password was not accepted.", "Developer Mode",
+                        MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+            }
+
+            DeveloperModePanel.Visibility = Visibility.Visible;
+            DeveloperModePanel.BringIntoView();
+            DeveloperNotificationStatusText.Text =
+                "Developer Mode is unlocked on this Windows account. The local access marker is protected with Windows DPAPI.";
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or InvalidOperationException or
+                System.ComponentModel.Win32Exception or CryptographicException)
+        {
+            MessageBox.Show(this, $"Developer Mode could not be unlocked.{Environment.NewLine}{exception.Message}",
+                "Developer Mode", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void DeveloperNotificationTest_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            updateNotificationService.ShowDeveloperTestNotification();
+            DeveloperNotificationStatusText.Text =
+                "A Windows notification test was sent to this PC. Sending notifications to all Nova installations requires a hosted notification service, which is not configured.";
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or System.ComponentModel.Win32Exception)
+        {
+            DeveloperNotificationStatusText.Text = $"The local notification test failed: {exception.Message}";
+            MessageBox.Show(this, exception.Message, "Notification test failed",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
     public void ShowUpdateReleaseNotes(string releaseName, string version, string releaseNotes)
     {
         if (Version.TryParse(version, out var parsedVersion))
