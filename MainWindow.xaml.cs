@@ -6,12 +6,20 @@ using Microsoft.Win32;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Application = System.Windows.Application;
 using Button = System.Windows.Controls.Button;
 using CheckBox = System.Windows.Controls.CheckBox;
+using Color = System.Windows.Media.Color;
+using Point = System.Windows.Point;
+using ProgressBar = System.Windows.Controls.ProgressBar;
+using Ellipse = System.Windows.Shapes.Ellipse;
+using Line = System.Windows.Shapes.Line;
+using Polyline = System.Windows.Shapes.Polyline;
 using MessageBox = System.Windows.MessageBox;
 
 namespace NovaManager;
@@ -24,10 +32,20 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<TempFileResult> tempFiles = new();
     private readonly ObservableCollection<TempCleanupCategory> cleanupCategories = new();
     private readonly ObservableCollection<TempCleanupCategory> selectedCleanupCategories = new();
+    private readonly ObservableCollection<DashboardSpecification> dashboardSpecifications = new();
+    private readonly ObservableCollection<DashboardDrive> dashboardDrives = new();
+    private UserPreferences preferences;
     private readonly ObservableCollection<StorageEntryInfo> storageFolders = new();
     private readonly ObservableCollection<ShortcutInfo> shortcuts = new();
     private readonly UpdateNotificationService updateNotificationService = new();
     private readonly DispatcherTimer updateCheckTimer = new() { Interval = TimeSpan.FromMinutes(10) };
+    private readonly List<DashboardMetrics> dashboardSamples = new();
+    private CancellationTokenSource? dashboardMonitoringCancellation;
+    private TimeSpan dashboardChartRange = TimeSpan.FromHours(1);
+    private DashboardSystemInfo? dashboardSystemInfo;
+    private DateTime lastDashboardChartUpdateAt = DateTime.MinValue;
+    private DateTime lastDashboardHistoryPruneAt = DateTime.MinValue;
+    private DateTime? lastAppUpdateCheckAt;
     private AppUpdateRelease? availableAppUpdate;
     private TempScanResult? lastTempScan;
     private int? rememberedTempFileCount;
@@ -36,9 +54,14 @@ public partial class MainWindow : Window
     private DateTime? lastCleanupAt;
     private string? lastCleanupSummary;
     private bool isBusy;
-    private bool isLoadingLatestReleaseNotes;
     private bool isUpdatingTempSelection;
     private bool showTempFileDetails;
+    private bool hasInstalledScan;
+    private bool hasUpdateScan;
+    private bool hasTempScan;
+    private bool isWindowLoaded;
+    private bool isDashboardMonitoringActive;
+    private bool isChangingDeveloperMode;
     private string? shortcutsFolder;
     private readonly Stack<string> folderMapHistory = new();
     private CancellationTokenSource? folderSearchCancellation;
@@ -47,10 +70,22 @@ public partial class MainWindow : Window
     public MainWindow(bool openSettings = false)
     {
         InitializeComponent();
-        if (openSettings)
+        try
         {
-            MainTabs.SelectedIndex = 4;
+            preferences = UserPreferencesService.Load();
         }
+        catch (Exception exception) when (
+            exception is InvalidOperationException or IOException or UnauthorizedAccessException or
+                System.Security.SecurityException or System.ComponentModel.Win32Exception)
+        {
+            MessageBox.Show(
+                $"Nova could not load some saved behaviour settings. Default settings will be used for this session. {exception.Message}",
+                "Saved settings unavailable", MessageBoxButton.OK, MessageBoxImage.Warning);
+            preferences = new UserPreferences(false, false, true, null);
+        }
+
+        lastAppUpdateCheckAt = preferences.LastAppUpdateCheckAt;
+        MainTabs.SelectedIndex = openSettings ? 4 : 0;
 
         DataContext = new
         {
@@ -60,33 +95,58 @@ public partial class MainWindow : Window
             TempFiles = tempFiles,
             CleanupCategories = cleanupCategories,
             SelectedCleanupCategories = selectedCleanupCategories,
+            DashboardSpecifications = dashboardSpecifications,
+            DashboardDrives = dashboardDrives,
             StorageFolders = storageFolders,
             Shortcuts = shortcuts
         };
         AddFolderRootOptions();
         LoadShortcutsFolder();
         AppearanceComboBox.SelectedIndex = ThemeManager.CurrentTheme == "Dark" ? 1 : 0;
-        AppearanceSelectionText.Text = ThemeManager.CurrentTheme;
-        AppearanceComboBox.SelectionChanged += AppearanceComboBox_SelectionChanged;
-        AppVersionText.Text = $"Installed version: {AppUpdateService.CurrentVersion}";
-        var bundledNotes = AppUpdateService.GetBundledReleaseNotes(AppUpdateService.CurrentVersion);
-        ShowLatestReleaseNotes(bundledNotes);
-        LatestReleaseNotesStatusText.Text = "Showing changelog bundled with this version. Checking GitHub for the latest release…";
-        Loaded += async (_, _) => await RefreshLatestReleaseNotesAsync();
+        var currentVersion = AppUpdateService.CurrentVersion.ToString(3);
+        var releaseLabel = AppUpdateService.GetBundledReleaseNotes(AppUpdateService.CurrentVersion).ReleaseName;
+        var releaseType = releaseLabel[(releaseLabel.LastIndexOf('(') + 1)..].TrimEnd(')');
+        var shortReleaseType = releaseType.Equals("Developer release", StringComparison.OrdinalIgnoreCase)
+            ? "Dev"
+            : releaseType;
+        SettingsVersionText.Text = $"v{currentVersion} • {shortReleaseType}";
+        AboutVersionText.Text = $"v{currentVersion} ({shortReleaseType})";
+        AboutArchitectureText.Text = Environment.Is64BitProcess ? "64-bit" : "32-bit";
+        SidebarVersionText.Text = $"Nova v{AppUpdateService.CurrentVersion}";
+        MinimizeToTrayToggle.IsChecked = preferences.MinimizeToTray;
+        StartWithWindowsToggle.IsChecked = preferences.StartWithWindows;
+        StartupNotificationToggle.IsChecked = preferences.StartupNotification;
+        UpdateLastUpdateCheckDisplay();
+        try
+        {
+            SetDeveloperModeState(DeveloperModeService.IsAuthorized());
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or InvalidOperationException or
+                System.ComponentModel.Win32Exception or CryptographicException)
+        {
+            MessageBox.Show(this, $"Saved Developer Mode access could not be read.{Environment.NewLine}{exception.Message}",
+                "Developer Mode", MessageBoxButton.OK, MessageBoxImage.Error);
+            SetDeveloperModeState(false);
+        }
         Loaded += MainWindow_Loaded;
         Closing += MainWindow_Closing;
         Closed += (_, _) =>
         {
             updateCheckTimer.Stop();
+            dashboardMonitoringCancellation?.Cancel();
             updateNotificationService.Dispose();
         };
         updateNotificationService.NotificationClicked += (_, _) => Dispatcher.BeginInvoke(() =>
         {
             WindowState = WindowState.Normal;
+            Show();
             Activate();
             MainTabs.SelectedIndex = 4;
         });
+        updateNotificationService.MainWindowExitRequested += (_, _) => Application.Current.Shutdown();
         updateCheckTimer.Tick += UpdateCheckTimer_Tick;
+        StateChanged += MainWindow_StateChanged;
         ShowStoragePanel(TempCleanupPanel);
         UpdateSectionChrome();
         RestoreRememberedScan();
@@ -102,8 +162,11 @@ public partial class MainWindow : Window
 
         SetSoftware(snapshot.Software ?? []);
         SetUpdates(snapshot.Updates ?? []);
+        hasInstalledScan = snapshot.Software is not null;
+        hasUpdateScan = snapshot.Updates is not null;
         rememberedTempFileCount = snapshot.TempFileCount;
         rememberedTempBytes = snapshot.TempBytes;
+        hasTempScan = snapshot.TempBytes is not null;
         lastScanAt = snapshot.LastScanAt;
         lastCleanupAt = snapshot.LastCleanupAt;
         lastCleanupSummary = snapshot.LastCleanupSummary;
@@ -134,6 +197,14 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        isWindowLoaded = true;
+        SetDashboardMonitoring(MainTabs.SelectedIndex == 0);
+        _ = LoadDashboardSystemInfoAsync();
+        if (preferences.StartupNotification)
+        {
+            updateNotificationService.ShowStartupNotification();
+        }
+
         string? notificationSetupError = null;
         try
         {
@@ -151,6 +222,18 @@ public partial class MainWindow : Window
         {
             AppUpdateStatusText.Text += $" Background notifications could not be enabled: {notificationSetupError}";
         }
+    }
+
+    private void MainWindow_StateChanged(object? sender, EventArgs e)
+    {
+        if (WindowState == WindowState.Minimized && preferences.MinimizeToTray)
+        {
+            updateNotificationService.SetMainWindowMinimized(true);
+            Hide();
+            return;
+        }
+
+        updateNotificationService.SetMainWindowMinimized(false);
     }
 
     private async void ScanButton_Click(object sender, RoutedEventArgs e)
@@ -205,6 +288,7 @@ public partial class MainWindow : Window
             await scan();
             lastScanAt = DateTime.Now;
             LastScanText.Text = lastScanAt.Value.ToString("g");
+            DashboardLastScanText.Text = lastScanAt.Value.ToString("g");
             RememberScan();
             StatusText.Text = $"{GetSectionName()} scan complete.";
         }
@@ -226,6 +310,9 @@ public partial class MainWindow : Window
         tempFolders.Clear();
         tempFiles.Clear();
         lastTempScan = null;
+        hasInstalledScan = false;
+        hasUpdateScan = false;
+        hasTempScan = false;
         CleanupStatusText.Text = string.Empty;
         RefreshCounts();
 
@@ -238,6 +325,7 @@ public partial class MainWindow : Window
         if (inventoryTask.IsCompletedSuccessfully)
         {
             SetSoftware(inventoryTask.Result.Items);
+            hasInstalledScan = true;
             errors.AddRange(inventoryTask.Result.Warnings);
         }
         else
@@ -248,6 +336,7 @@ public partial class MainWindow : Window
         if (updateTask.IsCompletedSuccessfully)
         {
             SetUpdates(updateTask.Result);
+            hasUpdateScan = true;
         }
         else
         {
@@ -257,6 +346,7 @@ public partial class MainWindow : Window
         if (tempTask.IsCompletedSuccessfully)
         {
             SetTempScan(tempTask.Result);
+            hasTempScan = true;
         }
         else
         {
@@ -270,9 +360,11 @@ public partial class MainWindow : Window
     private async Task ScanSoftwareAsync()
     {
         software.Clear();
+        hasInstalledScan = false;
         RefreshCounts();
         var result = await SoftwareScanner.FindInstalledAsync(CancellationToken.None);
         SetSoftware(result.Items);
+        hasInstalledScan = true;
         RefreshCounts();
         ThrowScanWarnings(result.Warnings);
     }
@@ -280,6 +372,7 @@ public partial class MainWindow : Window
     private async Task ScanUpdatesAsync()
     {
         updates.Clear();
+        hasUpdateScan = false;
         RefreshCounts();
         NovaUpdateScanStatusText.Text = "Checking GitHub for the latest Nova release…";
         StoreUpdateScanStatusText.Text = "Checking Microsoft Store app updates…";
@@ -301,6 +394,7 @@ public partial class MainWindow : Window
         if (wingetTask.IsCompletedSuccessfully)
         {
             updateResults.AddRange(wingetTask.Result);
+            hasUpdateScan = true;
         }
         else
         {
@@ -310,6 +404,7 @@ public partial class MainWindow : Window
         if (storeTask.IsCompletedSuccessfully)
         {
             updateResults.AddRange(storeTask.Result);
+            hasUpdateScan = true;
             StoreUpdateScanStatusText.Text = storeTask.Result.Count == 0
                 ? "No Microsoft Store updates were reported by the Store source."
                 : $"{storeTask.Result.Count:N0} Microsoft Store update(s) available.";
@@ -395,10 +490,12 @@ public partial class MainWindow : Window
         tempFolders.Clear();
         tempFiles.Clear();
         lastTempScan = null;
+        hasTempScan = false;
         CleanupStatusText.Text = string.Empty;
         RefreshCounts();
         var result = await Task.Run(() => TempCleaner.Scan(CancellationToken.None));
         SetTempScan(result);
+        hasTempScan = true;
         RefreshCounts();
         ThrowScanWarnings(result.Errors);
     }
@@ -406,34 +503,45 @@ public partial class MainWindow : Window
     private async void CheckAppUpdates_Click(object sender, RoutedEventArgs e) =>
         await CheckForAppUpdatesAsync(forceRefresh: true);
 
-    private async void SendFeatureSuggestion_Click(object sender, RoutedEventArgs e) =>
-        await SubmitGitHubFeedbackAsync(
-            FeatureSuggestionTextBox,
+    private void SuggestFeature_Click(object sender, RoutedEventArgs e) =>
+        OpenFeedbackDialog(
+            "Suggest a feature",
+            "Share an idea or improvement for Nova.",
             "Feature suggestion",
             "enhancement",
             includeDiagnostics: false);
 
-    private async void SendBugReport_Click(object sender, RoutedEventArgs e) =>
-        await SubmitGitHubFeedbackAsync(
-            BugReportTextBox,
+    private void ReportBug_Click(object sender, RoutedEventArgs e) =>
+        OpenFeedbackDialog(
+            "Report a bug",
+            "Describe what happened and what you expected.",
             "Bug report",
             "bug",
             includeDiagnostics: true);
 
-    private async Task SubmitGitHubFeedbackAsync(
-        System.Windows.Controls.TextBox input,
+    private void OpenFeedbackDialog(
+        string dialogTitle,
+        string prompt,
         string issueType,
         string label,
         bool includeDiagnostics)
     {
-        var description = input.Text.Trim();
-        if (description.Length == 0)
+        var dialog = new FeedbackDialog(
+            dialogTitle,
+            prompt,
+            description => SubmitGitHubFeedbackAsync(description, issueType, label, includeDiagnostics))
         {
-            FeedbackStatusText.Text = $"Enter a description before sending a {issueType.ToLowerInvariant()}.";
-            input.Focus();
-            return;
-        }
+            Owner = this
+        };
+        dialog.ShowDialog();
+    }
 
+    private async Task<string> SubmitGitHubFeedbackAsync(
+        string description,
+        string issueType,
+        string label,
+        bool includeDiagnostics)
+    {
         var body = $"### {issueType}\n\n{description}";
         if (includeDiagnostics)
         {
@@ -443,30 +551,19 @@ public partial class MainWindow : Window
 
         body += "\n\nSubmitted from Nova Manager Feedback & Support. @alfeoscr1-glitch";
         var title = $"[{issueType}] Nova Manager feedback";
-        FeatureSuggestionButton.IsEnabled = false;
-        BugReportButton.IsEnabled = false;
         isFeedbackSubmissionInProgress = true;
-        FeedbackStatusText.Text = "Sending your report to GitHub…";
         try
         {
-            var issueUrl = await GitHubFeedbackService.SubmitIssueAsync(
+            return await GitHubFeedbackService.SubmitIssueAsync(
                 title,
                 body,
                 label,
                 AuthorizeGitHubFeedbackAsync,
                 CancellationToken.None);
-            input.Clear();
-            FeedbackStatusText.Text = $"Submitted successfully. GitHub created the issue: {issueUrl}";
-        }
-        catch (Exception exception)
-        {
-            FeedbackStatusText.Text = $"Could not submit the report. No success was reported. {exception.Message}";
         }
         finally
         {
             isFeedbackSubmissionInProgress = false;
-            FeatureSuggestionButton.IsEnabled = true;
-            BugReportButton.IsEnabled = true;
         }
     }
 
@@ -476,11 +573,11 @@ public partial class MainWindow : Window
     {
         if (!isFeedbackSubmissionInProgress)
         {
+            dashboardMonitoringCancellation?.Cancel();
             return;
         }
 
         e.Cancel = true;
-        FeedbackStatusText.Text = "Nova will remain open until GitHub authorization and submission finish.";
     }
 
     private Task AuthorizeGitHubFeedbackAsync(string userCode, string verificationUri)
@@ -501,8 +598,6 @@ public partial class MainWindow : Window
         {
             throw new InvalidOperationException("GitHub sign-in was canceled; no report was submitted.");
         }
-
-        FeedbackStatusText.Text = "Waiting for GitHub authorization…";
         return Task.CompletedTask;
     }
 
@@ -516,19 +611,36 @@ public partial class MainWindow : Window
         try
         {
             ThemeManager.SetTheme(Application.Current, theme);
-            AppearanceSelectionText.Text = theme;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             MessageBox.Show(this, $"Nova could not save the appearance setting.{Environment.NewLine}{exception.Message}",
                 "Appearance setting could not be saved", MessageBoxButton.OK, MessageBoxImage.Error);
             AppearanceComboBox.SelectedIndex = ThemeManager.CurrentTheme == "Dark" ? 1 : 0;
-            AppearanceSelectionText.Text = ThemeManager.CurrentTheme;
+        }
+    }
+
+    private void SettingsCardsScrollViewer_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is ScrollViewer scrollViewer)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.ContextIdle, new Action(scrollViewer.ScrollToTop));
         }
     }
 
     private void DeveloperMode_Click(object sender, RoutedEventArgs e)
     {
+        if (isChangingDeveloperMode || sender is not CheckBox toggle)
+        {
+            return;
+        }
+
+        if (toggle.IsChecked != true)
+        {
+            SetDeveloperModeState(false);
+            return;
+        }
+
         try
         {
             if (!DeveloperModeService.IsAuthorized())
@@ -577,6 +689,7 @@ public partial class MainWindow : Window
                 if (prompt.ShowDialog() != true)
                 {
                     passwordBox.Clear();
+                    SetDeveloperModeState(false);
                     return;
                 }
 
@@ -584,14 +697,14 @@ public partial class MainWindow : Window
                 passwordBox.Clear();
                 if (!validPassword)
                 {
+                    SetDeveloperModeState(false);
                     MessageBox.Show(this, "The developer password was not accepted.", "Developer Mode",
                         MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
                 }
             }
 
-            DeveloperModePanel.Visibility = Visibility.Visible;
-            DeveloperModePanel.BringIntoView();
+            SetDeveloperModeState(true);
             DeveloperNotificationStatusText.Text =
                 "Developer Mode is unlocked on this Windows account. The local access marker is protected with Windows DPAPI.";
         }
@@ -599,8 +712,90 @@ public partial class MainWindow : Window
             exception is IOException or UnauthorizedAccessException or InvalidOperationException or
                 System.ComponentModel.Win32Exception or CryptographicException)
         {
+            SetDeveloperModeState(false);
             MessageBox.Show(this, $"Developer Mode could not be unlocked.{Environment.NewLine}{exception.Message}",
                 "Developer Mode", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void SetDeveloperModeState(bool enabled)
+    {
+        isChangingDeveloperMode = true;
+        DeveloperModeToggle.IsChecked = enabled;
+        DeveloperModeStatusText.Text = enabled
+            ? "Developer Mode is enabled"
+            : "Developer Mode is disabled";
+        DeveloperToolsPanel.Visibility = enabled ? Visibility.Visible : Visibility.Collapsed;
+        isChangingDeveloperMode = false;
+    }
+
+    private void BehaviourSetting_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not CheckBox { Tag: string preferenceName } toggle)
+        {
+            return;
+        }
+
+        var requestedValue = toggle.IsChecked == true;
+        var previousPreferences = preferences;
+        try
+        {
+            if (preferenceName == "StartWithWindows")
+            {
+                UserPreferencesService.SetStartWithWindows(requestedValue);
+            }
+
+            preferences = preferenceName switch
+            {
+                "MinimizeToTray" => preferences with { MinimizeToTray = requestedValue },
+                "StartWithWindows" => preferences with { StartWithWindows = requestedValue },
+                "StartupNotification" => preferences with { StartupNotification = requestedValue },
+                _ => throw new InvalidOperationException("This Nova preference is not supported.")
+            };
+            UserPreferencesService.Save(preferences);
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or InvalidOperationException or
+                System.Security.SecurityException or System.ComponentModel.Win32Exception)
+        {
+            preferences = previousPreferences;
+            if (preferenceName == "StartWithWindows")
+            {
+                try
+                {
+                    UserPreferencesService.SetStartWithWindows(previousPreferences.StartWithWindows);
+                }
+                catch (Exception rollbackException) when (
+                    rollbackException is IOException or UnauthorizedAccessException or InvalidOperationException or
+                        System.Security.SecurityException or System.ComponentModel.Win32Exception)
+                {
+                    MessageBox.Show(this,
+                        $"{exception.Message}{Environment.NewLine}Nova also could not restore the previous startup setting: {rollbackException.Message}",
+                        "Preference could not be saved", MessageBoxButton.OK, MessageBoxImage.Error);
+                    SetBehaviourToggle(preferenceName, previousPreferences);
+                    return;
+                }
+            }
+
+            SetBehaviourToggle(preferenceName, previousPreferences);
+            MessageBox.Show(this, exception.Message, "Preference could not be saved",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void SetBehaviourToggle(string preferenceName, UserPreferences value)
+    {
+        switch (preferenceName)
+        {
+            case "MinimizeToTray":
+                MinimizeToTrayToggle.IsChecked = value.MinimizeToTray;
+                break;
+            case "StartWithWindows":
+                StartWithWindowsToggle.IsChecked = value.StartWithWindows;
+                break;
+            case "StartupNotification":
+                StartupNotificationToggle.IsChecked = value.StartupNotification;
+                break;
         }
     }
 
@@ -622,50 +817,122 @@ public partial class MainWindow : Window
 
     public void ShowUpdateReleaseNotes(string releaseName, string version, string releaseNotes)
     {
-        if (Version.TryParse(version, out var parsedVersion))
-        {
-            ShowLatestReleaseNotes(new AppReleaseNotes(parsedVersion, $"v{version}", releaseName, releaseNotes));
-        }
-
         MainTabs.SelectedIndex = 4;
-        StatusText.Text = $"Updated to Nova {version}. The latest changelog is shown in Settings.";
-        _ = RefreshLatestReleaseNotesAsync();
+        StatusText.Text = $"Updated to Nova {version}.";
+        OpenChangeLog(new AppReleaseHistoryEntry(
+            Version.TryParse(version, out var parsedVersion) ? parsedVersion : AppUpdateService.CurrentVersion,
+            releaseName,
+            GetReleaseTypeFromName(releaseName),
+            DateTimeOffset.Now,
+            releaseNotes));
     }
 
-    public async Task RefreshLatestReleaseNotesAsync()
+    private void OpenChangeLog_Click(object sender, RoutedEventArgs e) => OpenChangeLog();
+
+    private void OpenChangeLog(AppReleaseHistoryEntry? justInstalledRelease = null)
     {
-        if (isLoadingLatestReleaseNotes)
+        var window = new ChangeLogWindow { Owner = this };
+        var releases = AppUpdateService.GetBundledReleaseHistory()
+            .Select(ToReleaseHistoryItem)
+            .ToList();
+        if (justInstalledRelease is not null)
         {
-            return;
+            releases.Insert(0, ToReleaseHistoryItem(justInstalledRelease));
         }
 
-        isLoadingLatestReleaseNotes = true;
-        LatestReleaseNotesStatusText.Text = "Checking GitHub for the latest release notes…";
+        window.SetBundledReleases(releases);
+        window.SetStatus("Showing release history bundled with this Nova installation. Checking GitHub for newer release notes…");
+        window.SetFooter("Dates are shown for GitHub releases when published. Developer-only local releases may not have a date.");
+        window.Loaded += async (_, _) =>
+        {
+            if (await LoadPublishedReleaseHistoryAsync(window, releases))
+            {
+                window.SetBundledReleases(releases
+                    .OrderByDescending(release => release.Version)
+                    .ThenByDescending(release => release.PublishedAt));
+                window.SetStatus($"{releases.Count:N0} release entries loaded from this build and GitHub.");
+            }
+        };
+        window.ShowDialog();
+    }
+
+    private static async Task<bool> LoadPublishedReleaseHistoryAsync(
+        ChangeLogWindow window,
+        List<ReleaseHistoryItem> releases)
+    {
         try
         {
-            var releaseNotes = await AppUpdateService.GetLatestReleaseNotesAsync(CancellationToken.None);
-            ShowLatestReleaseNotes(releaseNotes);
-            var warning = AppUpdateService.ApiWarningMessage;
-            LatestReleaseNotesStatusText.Text = string.IsNullOrWhiteSpace(warning)
-                ? $"Latest published release: {releaseNotes.Tag}."
-                : $"Latest published release: {releaseNotes.Tag}. {warning}";
+            var publishedReleases = await AppUpdateService.GetReleaseHistoryAsync(CancellationToken.None);
+            foreach (var release in publishedReleases)
+            {
+                var item = ToReleaseHistoryItem(release);
+                if (releases.Any(existing =>
+                        existing.Version == item.Version &&
+                        existing.ReleaseType.Equals(item.ReleaseType, StringComparison.OrdinalIgnoreCase)))
+                {
+                    continue;
+                }
+
+                releases.Add(item);
+            }
+
+            return true;
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException or TaskCanceledException or JsonException or InvalidDataException or
+                InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            window.SetStatus(
+                $"Could not refresh GitHub release history. Showing the locally bundled release notes instead. {exception.Message}");
+            return false;
+        }
+    }
+
+    private static ReleaseHistoryItem ToReleaseHistoryItem(AppReleaseHistoryEntry release)
+    {
+        var changes = release.Notes
+            .Split(["\r\n", "\n"], StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => line.Trim())
+            .Where(line => line.Length > 0)
+            .Select(line => line.StartsWith("- ", StringComparison.Ordinal) ||
+                            line.StartsWith("* ", StringComparison.Ordinal)
+                ? line[2..].Trim()
+                : line)
+            .ToArray();
+        if (changes.Length == 0)
+        {
+            changes = ["No change notes were published for this release."];
+        }
+
+        return new ReleaseHistoryItem(release.Version, release.ReleaseType, release.PublishedAt, changes);
+    }
+
+    private static string GetReleaseTypeFromName(string releaseName)
+    {
+        var opening = releaseName.LastIndexOf('(');
+        return opening >= 0 && releaseName.EndsWith(')')
+            ? releaseName[(opening + 1)..^1]
+            : "New version";
+    }
+
+    private void UpdateLastUpdateCheckDisplay()
+    {
+        AboutLastUpdateCheckText.Text = lastAppUpdateCheckAt?.ToString("g") ?? "Not checked yet";
+    }
+
+    private void RecordSuccessfulAppUpdateCheck()
+    {
+        lastAppUpdateCheckAt = DateTime.Now;
+        UpdateLastUpdateCheckDisplay();
+        preferences = preferences with { LastAppUpdateCheckAt = lastAppUpdateCheckAt };
+        try
+        {
+            UserPreferencesService.Save(preferences);
         }
         catch (Exception exception)
         {
-            LatestReleaseNotesStatusText.Text =
-                $"Could not refresh the changelog from GitHub. Showing bundled Nova {AppUpdateService.CurrentVersion} notes instead. {exception.Message}";
+            AppUpdateStatusText.Text += $" The check succeeded, but its time could not be saved: {exception.Message}";
         }
-        finally
-        {
-            isLoadingLatestReleaseNotes = false;
-        }
-    }
-
-    private void ShowLatestReleaseNotes(AppReleaseNotes releaseNotes)
-    {
-        LatestReleaseNotesTitleText.Text = releaseNotes.ReleaseName;
-        LatestReleaseNotesText.Text = releaseNotes.Notes;
-        LatestReleaseNotesPanel.Visibility = Visibility.Visible;
     }
 
     private async Task CheckForAppUpdatesAsync(bool forceRefresh = false)
@@ -741,6 +1008,7 @@ public partial class MainWindow : Window
                 : $"Version {availableAppUpdate.Version} is available (release {availableAppUpdate.Tag}). Download it when you’re ready.";
         var apiWarning = AppUpdateService.ApiWarningMessage;
         AppUpdateStatusText.Text = string.IsNullOrWhiteSpace(apiWarning) ? status : $"{status} {apiWarning}";
+        RecordSuccessfulAppUpdateCheck();
 
         if (notifyIfNew && availableAppUpdate is not null)
         {
@@ -868,6 +1136,7 @@ public partial class MainWindow : Window
     private void SetTempScan(TempScanResult result)
     {
         lastTempScan = result;
+        hasTempScan = true;
         rememberedTempFileCount = null;
         rememberedTempBytes = null;
         tempFolders.Clear();
@@ -1097,9 +1366,36 @@ public partial class MainWindow : Window
         SelectedTempCategoriesText.Text = selectedCleanupCategories.Count == 0
             ? "No categories selected"
             : $"{selected.Length:N0} file(s) selected from {selectedCleanupCategories.Count:N0} location(s)";
-        CleanButton.Content = "Cleanup files";
+        var availableFiles = tempFiles.Count;
+        var availableBytes = tempFiles.Sum(file => file.Bytes);
+        CleanupTotalEstimateText.Text = lastTempScan is null
+            ? "Scan to estimate"
+            : $"{availableFiles:N0} files · {FormatBytes(availableBytes)} found";
+        var selectableCategories = cleanupCategories.Where(category => category.IsSelectedAllowed).ToArray();
+        var selectedCategories = selectableCategories.Count(category => category.IsSelected);
+        SelectAllCleanupCheckBox.IsChecked = selectableCategories.Length == 0 || selectedCategories == 0
+            ? false
+            : selectedCategories == selectableCategories.Length ? true : null;
+        CleanButton.Content = "Clean Selected Files";
         CleanButton.IsEnabled = !isBusy && selected.Length > 0;
         isUpdatingTempSelection = false;
+    }
+
+    private void SelectAllCleanupCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        var select = SelectAllCleanupCheckBox.IsChecked == true;
+        isUpdatingTempSelection = true;
+        foreach (var category in cleanupCategories.Where(category => category.IsSelectedAllowed))
+        {
+            category.IsSelected = select;
+            foreach (var file in category.Files)
+            {
+                file.IsSelected = select;
+            }
+        }
+
+        isUpdatingTempSelection = false;
+        UpdateTempSelectionState();
     }
 
     private void CleanupCategoryCheckBox_Click(object sender, RoutedEventArgs e)
@@ -1139,12 +1435,16 @@ public partial class MainWindow : Window
 
     private static void SetStorageSectionButtonState(Button button, bool isSelected)
     {
-        button.Background = isSelected
-            ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(86, 105, 232))
-            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(240, 243, 248));
-        button.Foreground = isSelected
-            ? System.Windows.Media.Brushes.White
-            : new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(83, 98, 122));
+        button.SetResourceReference(
+            System.Windows.Controls.Control.BackgroundProperty,
+            isSelected ? "AccentBrush" : "ThemeBrush_F0F3F8");
+        if (isSelected)
+        {
+            button.Foreground = System.Windows.Media.Brushes.White;
+            return;
+        }
+
+        button.SetResourceReference(System.Windows.Controls.Control.ForegroundProperty, "ThemeBrush_202A3B");
     }
 
     private void ToggleTempFiles_Click(object sender, RoutedEventArgs e)
@@ -1529,31 +1829,332 @@ public partial class MainWindow : Window
         }
     }
 
+    private void SetDashboardMonitoring(bool active)
+    {
+        if (!isWindowLoaded || isDashboardMonitoringActive == active)
+        {
+            return;
+        }
+
+        isDashboardMonitoringActive = active;
+        if (!active)
+        {
+            dashboardMonitoringCancellation?.Cancel();
+            dashboardMonitoringCancellation = null;
+            DashboardMonitoringStatusText.Text = "  Monitoring paused";
+            return;
+        }
+
+        DashboardMonitoringStatusText.Text = "  Monitoring active";
+        var cancellation = new CancellationTokenSource();
+        dashboardMonitoringCancellation = cancellation;
+        _ = RunDashboardMetricsLoopAsync(cancellation);
+        if (dashboardSystemInfo is null)
+        {
+            _ = LoadDashboardSystemInfoAsync();
+        }
+    }
+
+    private async Task LoadDashboardSystemInfoAsync()
+    {
+        try
+        {
+            var info = await DashboardMonitor.ReadSystemInfoAsync();
+            dashboardSystemInfo = info;
+            dashboardSpecifications.Clear();
+            foreach (var specification in info.Specifications)
+            {
+                dashboardSpecifications.Add(specification);
+            }
+
+            dashboardDrives.Clear();
+            foreach (var drive in info.Drives)
+            {
+                dashboardDrives.Add(drive);
+            }
+
+            WindowsVersionText.Text = info.OperatingSystem;
+            WindowsArchitectureText.Text = info.SystemType;
+            WindowsLastBootText.Text = info.LastBoot;
+            AboutSystemText.Text = info.OperatingSystem;
+            if (dashboardSamples.Count > 0)
+            {
+                UpdateDashboardMetrics(dashboardSamples[^1]);
+            }
+        }
+        catch (Exception exception) when (
+            exception is COMException or Win32Exception or IOException or
+                UnauthorizedAccessException or InvalidOperationException or System.Security.SecurityException)
+        {
+            DashboardMonitoringStatusText.Text = "  System information unavailable";
+            StatusText.Text = $"Nova could not read some system information. {exception.Message}";
+        }
+    }
+
+    private async Task RunDashboardMetricsLoopAsync(CancellationTokenSource cancellation)
+    {
+        var cancellationToken = cancellation.Token;
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var metrics = await DashboardMonitor.ReadMetricsAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    if (!isDashboardMonitoringActive || cancellationToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    UpdateDashboardMetrics(metrics);
+                    if (dashboardSamples.Count == 0 ||
+                        metrics.Timestamp - dashboardSamples[^1].Timestamp >= TimeSpan.FromSeconds(1))
+                    {
+                        dashboardSamples.Add(metrics);
+                    }
+
+                    if (metrics.Timestamp - lastDashboardHistoryPruneAt >= TimeSpan.FromMinutes(1))
+                    {
+                        var oldestRetainedSample = metrics.Timestamp - TimeSpan.FromHours(24);
+                        dashboardSamples.RemoveAll(sample => sample.Timestamp < oldestRetainedSample);
+                        lastDashboardHistoryPruneAt = metrics.Timestamp;
+                    }
+
+                    if (metrics.Timestamp - lastDashboardChartUpdateAt >= TimeSpan.FromSeconds(1))
+                    {
+                        UpdatePerformanceChart();
+                        lastDashboardChartUpdateAt = metrics.Timestamp;
+                    }
+                }, DispatcherPriority.Background).Task.ConfigureAwait(false);
+
+                await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception) when (
+            exception is COMException or Win32Exception or IOException or
+                UnauthorizedAccessException or InvalidOperationException or System.Security.SecurityException)
+        {
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (isDashboardMonitoringActive)
+                {
+                    DashboardMonitoringStatusText.Text = "  Monitoring unavailable";
+                    StatusText.Text = $"Live system monitoring could not read this PC's metrics. {exception.Message}";
+                }
+            }, DispatcherPriority.Background).Task.ConfigureAwait(false);
+        }
+        finally
+        {
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (ReferenceEquals(dashboardMonitoringCancellation, cancellation))
+                {
+                    dashboardMonitoringCancellation = null;
+                }
+
+                cancellation.Dispose();
+            }, DispatcherPriority.Background).Task.ConfigureAwait(false);
+        }
+    }
+
+    private void UpdateDashboardMetrics(DashboardMetrics metrics)
+    {
+        SetMetric(CpuUsageText, CpuUsageBar, metrics.CpuUsage);
+        SetMetric(GpuUsageText, GpuUsageBar, metrics.GpuUsage);
+        SetMetric(RamUsageText, RamUsageBar, metrics.RamUsage);
+        SetMetric(VramUsageText, VramUsageBar, metrics.VramUsage);
+        CpuTemperatureText.Text = $"CPU temp: {metrics.CpuTemperature}";
+        GpuTemperatureText.Text = $"GPU temp: {metrics.GpuTemperature}";
+
+        VramBreakdownText.Text =
+            metrics.VramUsedBytes is long vramUsed && metrics.VramTotalBytes is long vramTotal
+                ? $"{FormatBytes(vramUsed)} / {FormatBytes(vramTotal)}"
+                : "Unavailable / Unavailable";
+        RamBreakdownText.Text = metrics.RamTotalBytes > 0
+            ? $"{FormatBytes((long)Math.Min(metrics.RamUsedBytes, (ulong)long.MaxValue))} / " +
+              $"{FormatBytes((long)Math.Min(metrics.RamTotalBytes, (ulong)long.MaxValue))}"
+            : "Unavailable / Unavailable";
+    }
+
+    private static void SetMetric(
+        TextBlock valueText,
+        ProgressBar progressBar,
+        double? value)
+    {
+        valueText.Text = value is double percentage ? $"{percentage:0}%" : "Unavailable";
+        progressBar.Value = value ?? 0;
+    }
+
+    private void DashboardRange_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string value } || !int.TryParse(value, out var hours))
+        {
+            return;
+        }
+
+        dashboardChartRange = TimeSpan.FromHours(hours);
+        SetDashboardRangeButton(DashboardRange1HButton, hours == 1);
+        SetDashboardRangeButton(DashboardRange6HButton, hours == 6);
+        SetDashboardRangeButton(DashboardRange24HButton, hours == 24);
+        UpdatePerformanceChart();
+    }
+
+    private static void SetDashboardRangeButton(Button button, bool selected)
+    {
+        button.Background = new SolidColorBrush(selected
+            ? Color.FromRgb(64, 95, 255)
+            : Color.FromRgb(18, 37, 70));
+        button.Foreground = new SolidColorBrush(selected
+            ? Colors.White
+            : Color.FromRgb(168, 185, 211));
+    }
+
+    private void PerformanceChart_SizeChanged(object sender, SizeChangedEventArgs e) =>
+        UpdatePerformanceChart();
+
+    private void UpdatePerformanceChart()
+    {
+        if (!IsInitialized || PerformanceChart.ActualWidth <= 0 || PerformanceChart.ActualHeight <= 0)
+        {
+            return;
+        }
+
+        PerformanceChart.Children.Clear();
+        var width = PerformanceChart.ActualWidth;
+        var height = PerformanceChart.ActualHeight;
+        var gridBrush = new SolidColorBrush(Color.FromRgb(24, 47, 82));
+        for (var row = 1; row <= 3; row++)
+        {
+            var y = height * row / 4;
+            PerformanceChart.Children.Add(new Line
+            {
+                X1 = 0,
+                X2 = width,
+                Y1 = y,
+                Y2 = y,
+                Stroke = gridBrush,
+                StrokeThickness = 1
+            });
+        }
+
+        var now = DateTime.Now;
+        var start = now - dashboardChartRange;
+        var samples = dashboardSamples
+            .Where(sample => sample.Timestamp >= start && sample.Timestamp <= now)
+            .ToArray();
+        var sampleStride = Math.Max(1, (int)Math.Ceiling(samples.Length / 2400d));
+        var plottedSamples = samples
+            .Where((_, index) => index % sampleStride == 0 || index == samples.Length - 1)
+            .ToArray();
+        var collectedDuration = samples.Length > 0 ? now - samples[0].Timestamp : TimeSpan.Zero;
+        PerformanceHistoryCoverageText.Text = samples.Length < 2
+            ? "Waiting for samples"
+            : collectedDuration < dashboardChartRange
+                ? $"{FormatHistoryDuration(collectedDuration)} collected"
+                : $"Last {dashboardChartRange.TotalHours:0}h";
+        var graphStart = collectedDuration < dashboardChartRange && samples.Length > 0
+            ? samples[0].Timestamp
+            : start;
+        var graphDurationMilliseconds = Math.Max((now - graphStart).TotalMilliseconds, 1);
+        var series = new (Func<DashboardMetrics, double?> Value, Color Color)[]
+        {
+            (sample => sample.CpuUsage, Color.FromRgb(85, 117, 255)),
+            (sample => sample.GpuUsage, Color.FromRgb(0, 201, 156)),
+            (sample => sample.RamUsage, Color.FromRgb(25, 184, 243)),
+            (sample => sample.VramUsage, Color.FromRgb(217, 66, 222))
+        };
+        var plottedPointCount = 0;
+        foreach (var (getValue, color) in series)
+        {
+            Polyline? line = null;
+            foreach (var sample in plottedSamples)
+            {
+                var value = getValue(sample);
+                if (value is null)
+                {
+                    AddPerformanceLine(line, color);
+                    line = null;
+                    continue;
+                }
+
+                plottedPointCount++;
+                line ??= new Polyline
+                {
+                    Stroke = new SolidColorBrush(color),
+                    StrokeThickness = 1.6,
+                    StrokeLineJoin = PenLineJoin.Round
+                };
+                var x = plottedSamples.Length == 1
+                    ? width
+                    : Math.Clamp(
+                        (sample.Timestamp - graphStart).TotalMilliseconds / graphDurationMilliseconds * width,
+                        0,
+                        width);
+                var y = height - Math.Clamp(value.Value, 0, 100) / 100 * height;
+                line.Points.Add(new Point(x, y));
+            }
+
+            AddPerformanceLine(line, color);
+        }
+
+        PerformanceChartEmptyText.Visibility = plottedPointCount >= 2 ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    private void AddPerformanceLine(Polyline? line, Color color)
+    {
+        if (line is null || line.Points.Count == 0)
+        {
+            return;
+        }
+
+        if (line.Points.Count == 1)
+        {
+            var point = line.Points[0];
+            var marker = new Ellipse
+            {
+                Width = 4,
+                Height = 4,
+                Fill = new SolidColorBrush(color)
+            };
+            Canvas.SetLeft(marker, point.X - marker.Width / 2);
+            Canvas.SetTop(marker, point.Y - marker.Height / 2);
+            PerformanceChart.Children.Add(marker);
+            return;
+        }
+
+        PerformanceChart.Children.Add(line);
+    }
+
+    private static string FormatHistoryDuration(TimeSpan duration) =>
+        duration.TotalMinutes < 1
+            ? $"{Math.Max(1, (int)duration.TotalSeconds)}s"
+            : duration.TotalHours < 1
+                ? $"{(int)duration.TotalMinutes}m"
+                : $"{(int)duration.TotalHours}h {(int)duration.Minutes}m";
+
     private void RefreshCounts()
     {
-        InstalledCountText.Text = software.Count.ToString("N0");
-        UpdatesCountText.Text = updates.Count.ToString("N0");
-        HeroTitle.Text = updates.Count == 0
-            ? "No winget updates found"
-            : $"{updates.Count:N0} update{(updates.Count == 1 ? string.Empty : "s")} ready to review";
-        UpdatesSummaryText.Text = updates.Count == 0
-            ? "No updates were reported by the winget source."
-            : $"{updates.Count:N0} available update(s) from the winget source.";
+        InstalledCountText.Text = hasInstalledScan ? software.Count.ToString("N0") : "—";
+        InstalledSummaryText.Text = hasInstalledScan ? "apps and games found" : "Scan this PC to count apps";
+        UpdatesCountText.Text = hasUpdateScan ? updates.Count.ToString("N0") : "—";
+        UpdatesSummaryText.Text = !hasUpdateScan
+            ? "Scan to check available updates"
+            : updates.Count == 0
+                ? "You're up to date!"
+                : $"{updates.Count:N0} found by winget";
 
         var scannedFiles = lastTempScan?.FileCount ?? rememberedTempFileCount ?? 0;
         var scannedBytes = lastTempScan?.TotalBytes ?? rememberedTempBytes ?? 0;
-        var hasTempScan = lastTempScan is not null || rememberedTempBytes is not null;
+        hasTempScan |= lastTempScan is not null || rememberedTempBytes is not null;
         TempSizeText.Text = hasTempScan ? FormatBytes(scannedBytes) : "—";
         TempCountText.Text = hasTempScan
             ? $"{scannedFiles:N0} file(s) found"
             : "Scan to estimate";
-        TempSummaryText.Text = hasTempScan
-            ? $"{scannedFiles:N0} file(s), {FormatBytes(scannedBytes)} estimated. Files may be locked or protected."
-            : "Run a scan to see the removable file estimate.";
-        if (lastCleanupSummary is not null && lastCleanupAt is DateTime cleanedAt)
-        {
-            TempSummaryText.Text += $" Last cleanup ({cleanedAt:g}): {lastCleanupSummary}";
-        }
         UpdateTempSelectionState();
     }
 
@@ -1562,6 +2163,8 @@ public partial class MainWindow : Window
         isBusy = busy;
         ScanButton.IsEnabled = !busy;
         ScanButton.Content = busy ? "Scanning…" : GetScanButtonText();
+        DashboardScanButton.IsEnabled = !busy;
+        DashboardScanButton.Content = busy ? "Scanning…" : "⌕   Scan for Updates";
         TempScanButton.IsEnabled = !busy;
         FolderMapScanButton.IsEnabled = !busy;
         ShortcutsScanButton.IsEnabled = !busy;
@@ -1586,9 +2189,10 @@ public partial class MainWindow : Window
             return;
         }
 
+        var dashboardSelected = MainTabs.SelectedIndex == 0;
         PageTitle.Text = MainTabs.SelectedIndex switch
         {
-            0 => $"Good morning, {Environment.UserName}",
+            0 => "Dashboard",
             1 => "My software",
             2 => "Updates",
             3 => "Storage & cleanup",
@@ -1597,7 +2201,7 @@ public partial class MainWindow : Window
         };
         PageSubtitle.Text = MainTabs.SelectedIndex switch
         {
-            0 => "Your software at a glance. Updates and cleanup stay in your control.",
+            0 => "Live overview of your software, updates, and system.",
             1 => "Browse applications and games found on this PC.",
             2 => "Review update candidates from the winget source.",
             3 => "Explore storage, temporary files, and your software shortcuts.",
@@ -1605,6 +2209,15 @@ public partial class MainWindow : Window
             _ => string.Empty
         };
 
+        DashboardGreetingText.Text =
+            $"{(DateTime.Now.Hour < 12 ? "Good morning" : DateTime.Now.Hour < 18 ? "Good afternoon" : "Good evening")}, {Environment.UserName}";
+        var settingsSelected = MainTabs.SelectedIndex == 4;
+        PageHeader.Visibility = dashboardSelected || settingsSelected
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+        StatusText.Foreground = dashboardSelected
+            ? new SolidColorBrush(Color.FromRgb(121, 148, 185))
+            : new SolidColorBrush(Color.FromRgb(152, 163, 180));
         SetNavButtonState(OverviewNavButton, MainTabs.SelectedIndex == 0);
         SetNavButtonState(SoftwareNavButton, MainTabs.SelectedIndex == 1);
         SetNavButtonState(UpdatesNavButton, MainTabs.SelectedIndex == 2);
@@ -1615,10 +2228,11 @@ public partial class MainWindow : Window
             ScanButton.Content = GetScanButtonText();
         }
 
-        if (MainTabs.SelectedIndex == 4)
+        if (isWindowLoaded)
         {
-            _ = RefreshLatestReleaseNotesAsync();
+            SetDashboardMonitoring(dashboardSelected);
         }
+
     }
 
     private static void SetNavButtonState(Button button, bool selected)
@@ -1631,7 +2245,7 @@ public partial class MainWindow : Window
 
     private string GetScanButtonText() => MainTabs.SelectedIndex switch
     {
-        0 => "Scan this PC",
+        0 => "Scan for updates",
         1 => "Scan software",
         2 => "Scan updates",
         3 when FolderMapPanel.Visibility == Visibility.Visible => "Scan folder",

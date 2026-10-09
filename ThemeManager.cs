@@ -37,7 +37,7 @@ internal static class ThemeManager
 
     public static void Load(Application application)
     {
-        var theme = "Light";
+        var theme = "Dark";
         try
         {
             if (File.Exists(SettingsPath))
@@ -55,7 +55,7 @@ internal static class ThemeManager
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or InvalidDataException)
         {
             MessageBox.Show(
-                $"Nova could not read the saved appearance and will use Light mode.{Environment.NewLine}{exception.Message}",
+                $"Nova could not read the saved appearance and will use Dark mode.{Environment.NewLine}{exception.Message}",
                 "Appearance setting unavailable",
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
@@ -101,17 +101,17 @@ internal static class ThemeManager
         var brightness = (color.R + color.G + color.B) / 3;
         return brightness >= 205
             ? Color.FromRgb(
-                DarkenSurface(color.R),
-                DarkenSurface(color.G),
-                DarkenSurface(color.B))
+                DarkenSurface(color.R, 18),
+                DarkenSurface(color.G, 31),
+                DarkenSurface(color.B, 53))
             : Color.FromRgb(
                 LightenText(color.R),
                 LightenText(color.G),
                 LightenText(color.B));
     }
 
-    private static byte DarkenSurface(byte channel) =>
-        (byte)Math.Clamp(28 + (255 - channel) * 0.28, 28, 100);
+    private static byte DarkenSurface(byte channel, byte baseTone) =>
+        (byte)Math.Clamp(baseTone + (255 - channel) * 0.16, baseTone, 100);
 
     private static byte LightenText(byte channel) =>
         (byte)Math.Clamp(255 - channel * 0.4, 160, 245);

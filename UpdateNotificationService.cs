@@ -19,6 +19,13 @@ internal sealed class UpdateNotificationService : IDisposable
         Text = "Nova Software Manager",
         Visible = false
     };
+    private readonly NotifyIcon mainWindowTrayIcon = new()
+    {
+        Icon = System.Drawing.SystemIcons.Application,
+        Text = "Nova Software Manager",
+        Visible = false
+    };
+    private readonly System.Windows.Forms.ContextMenuStrip mainWindowTrayMenu = new();
 
     private readonly System.Windows.Threading.DispatcherTimer hideIconTimer = new()
     {
@@ -26,10 +33,32 @@ internal sealed class UpdateNotificationService : IDisposable
     };
 
     public event EventHandler? NotificationClicked;
+    public event EventHandler? MainWindowExitRequested;
+
+    public void SetMainWindowMinimized(bool minimized)
+    {
+        mainWindowTrayIcon.Visible = minimized;
+    }
+
+    public void ShowStartupNotification()
+    {
+        notifyIcon.Visible = true;
+        notifyIcon.ShowBalloonTip(
+            10_000,
+            "Nova Software Manager",
+            "Nova is ready. Your system is up to date with its last scan.",
+            ToolTipIcon.Info);
+        hideIconTimer.Stop();
+        hideIconTimer.Start();
+    }
 
     public UpdateNotificationService()
     {
         notifyIcon.BalloonTipClicked += (_, _) => NotificationClicked?.Invoke(this, EventArgs.Empty);
+        mainWindowTrayMenu.Items.Add("Open Nova", null, (_, _) => NotificationClicked?.Invoke(this, EventArgs.Empty));
+        mainWindowTrayMenu.Items.Add("Exit", null, (_, _) => MainWindowExitRequested?.Invoke(this, EventArgs.Empty));
+        mainWindowTrayIcon.ContextMenuStrip = mainWindowTrayMenu;
+        mainWindowTrayIcon.DoubleClick += (_, _) => NotificationClicked?.Invoke(this, EventArgs.Empty);
         hideIconTimer.Tick += (_, _) =>
         {
             hideIconTimer.Stop();
@@ -172,6 +201,9 @@ internal sealed class UpdateNotificationService : IDisposable
     {
         hideIconTimer.Stop();
         notifyIcon.Visible = false;
+        mainWindowTrayIcon.Visible = false;
+        mainWindowTrayIcon.Dispose();
+        mainWindowTrayMenu.Dispose();
         notifyIcon.Dispose();
     }
 }

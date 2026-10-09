@@ -16,6 +16,12 @@ public sealed record UpdateCandidate(
     string AvailableVersion,
     string Source = "winget");
 
+internal sealed record ReleaseHistoryItem(
+    Version Version,
+    string ReleaseType,
+    DateTimeOffset? PublishedAt,
+    IReadOnlyList<string> Changes);
+
 public sealed class TempFileResult : INotifyPropertyChanged
 {
     private bool isSelected;

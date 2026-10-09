@@ -1,25 +1,119 @@
 <Window x:Class="NovaManager.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Nova Software Manager" Height="850" Width="1320" MinHeight="700" MinWidth="1050"
-        WindowStartupLocation="CenterScreen" Background="{DynamicResource ThemeBrush_F2F5FA}" FontFamily="Segoe UI">
+        Title="Nova Manager" Height="900" Width="1500" MinHeight="700" MinWidth="1050"
+        WindowStartupLocation="CenterScreen" Background="#07142B" FontFamily="Segoe UI">
     <Window.Resources>
+        <SolidColorBrush x:Key="Settings.SurfaceBrush" Color="{DynamicResource ThemeColor_FFFFFF}" Opacity="0.88"/>
+        <SolidColorBrush x:Key="Settings.InsetBrush" Color="{DynamicResource ThemeColor_F7F8FB}" Opacity="0.94"/>
+        <SolidColorBrush x:Key="Settings.BorderBrush" Color="{DynamicResource ThemeColor_E8ECF3}" Opacity="0.78"/>
+        <SolidColorBrush x:Key="Settings.TextBrush" Color="{DynamicResource ThemeColor_202A3B}"/>
+        <SolidColorBrush x:Key="Settings.MutedTextBrush" Color="{DynamicResource ThemeColor_53627A}"/>
+        <SolidColorBrush x:Key="Settings.AccentTextBrush" Color="{DynamicResource ThemeColor_5669E8}"/>
+        <SolidColorBrush x:Key="Settings.PurpleAccentBrush" Color="{DynamicResource ThemeColor_7657DF}"/>
+        <SolidColorBrush x:Key="Settings.CyanAccentBrush" Color="#00859F"/>
+        <SolidColorBrush x:Key="Settings.GreenAccentBrush" Color="#178255"/>
+        <SolidColorBrush x:Key="Settings.AmberAccentBrush" Color="#A65C00"/>
+        <SolidColorBrush x:Key="Settings.RoseAccentBrush" Color="#B73868"/>
+        <LinearGradientBrush x:Key="Settings.AccentButtonBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#2D68F7" Offset="0"/>
+            <GradientStop Color="#5B4DFA" Offset="1"/>
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="Settings.SunsetSkyBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#7954AF" Offset="0"/>
+            <GradientStop Color="#DB80B5" Offset="0.56"/>
+            <GradientStop Color="#FFA8AE" Offset="0.73"/>
+            <GradientStop Color="#395A9A" Offset="1"/>
+        </LinearGradientBrush>
+        <Style x:Key="SettingsCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Settings.SurfaceBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Settings.BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="18"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#3675FF" BlurRadius="15" ShadowDepth="0" Opacity="0.2"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SettingsInset" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Settings.InsetBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Settings.BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="13"/>
+            <Setter Property="Padding" Value="12"/>
+        </Style>
+        <Style x:Key="SettingsIconPlate" TargetType="Border" BasedOn="{StaticResource SettingsInset}">
+            <Setter Property="Background" Value="#D51D4BC2"/>
+            <Setter Property="BorderBrush" Value="#D876A9FF"/>
+        </Style>
+        <Style x:Key="SettingsPurpleIconPlate" TargetType="Border" BasedOn="{StaticResource SettingsIconPlate}">
+            <Setter Property="Background" Value="#D53F36B5"/>
+            <Setter Property="BorderBrush" Value="#D89283FF"/>
+        </Style>
+        <Style x:Key="SettingsCyanIconPlate" TargetType="Border" BasedOn="{StaticResource SettingsIconPlate}">
+            <Setter Property="Background" Value="#D5107395"/>
+            <Setter Property="BorderBrush" Value="#D56CE8FF"/>
+        </Style>
+        <Style x:Key="SettingsGreenIconPlate" TargetType="Border" BasedOn="{StaticResource SettingsIconPlate}">
+            <Setter Property="Background" Value="#D31D795D"/>
+            <Setter Property="BorderBrush" Value="#D179F2C3"/>
+        </Style>
+        <Style x:Key="SettingsAmberIconPlate" TargetType="Border" BasedOn="{StaticResource SettingsIconPlate}">
+            <Setter Property="Background" Value="#D3985A15"/>
+            <Setter Property="BorderBrush" Value="#D9FFCF70"/>
+        </Style>
+        <Style x:Key="SettingsRoseIconPlate" TargetType="Border" BasedOn="{StaticResource SettingsIconPlate}">
+            <Setter Property="Background" Value="#D399326A"/>
+            <Setter Property="BorderBrush" Value="#D9FF8DC1"/>
+        </Style>
+        <Style x:Key="SettingsHeading" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Settings.TextBrush}"/>
+            <Setter Property="FontSize" Value="17"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        </Style>
+        <Style x:Key="SettingsCaption" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Settings.MutedTextBrush}"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+        <Style x:Key="SettingsAccentButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{DynamicResource Settings.AccentButtonBrush}"/>
+            <Setter Property="Padding" Value="15,11"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="MinHeight" Value="46"/>
+        </Style>
+        <Style x:Key="SettingsSecondaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{DynamicResource Settings.InsetBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Settings.TextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Settings.BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="13,9"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="MinHeight" Value="42"/>
+        </Style>
         <Style x:Key="NavButton" TargetType="Button">
             <Setter Property="HorizontalContentAlignment" Value="Left"/>
             <Setter Property="Foreground" Value="{DynamicResource ThemeBrush_AEB9CB}"/>
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="FontWeight" Value="Normal"/>
-            <Setter Property="Padding" Value="14,9"/>
-            <Setter Property="Margin" Value="3,0"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="MinHeight" Value="44"/>
+            <Setter Property="Margin" Value="0,4"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="NavBorder" Background="{TemplateBinding Background}" CornerRadius="20">
+                        <Border x:Name="NavBorder" Background="{TemplateBinding Background}" CornerRadius="11">
                             <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="NavBorder" Property="Background" Value="{DynamicResource ThemeBrush_293754}"/>
+                                <Setter TargetName="NavBorder" Property="Background" Value="#183055"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -28,29 +122,88 @@
         </Style>
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="Background" Value="{DynamicResource ThemeBrush_FFFFFF}"/>
-            <Setter Property="CornerRadius" Value="16"/>
-            <Setter Property="Padding" Value="26"/>
+            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="Padding" Value="22"/>
             <Setter Property="BorderBrush" Value="{DynamicResource ThemeBrush_E8ECF3}"/>
             <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="#3675FF" BlurRadius="18" ShadowDepth="0" Opacity="0.12"/>
+                </Setter.Value>
+            </Setter>
         </Style>
         <Style x:Key="AppearanceComboBox" TargetType="ComboBox">
-            <Setter Property="Background" Value="{DynamicResource ThemeBrush_FFFFFF}"/>
-            <Setter Property="Foreground" Value="{DynamicResource ThemeBrush_202A3B}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBrush_E8ECF3}"/>
-            <Setter Property="Padding" Value="10,7"/>
-            <Setter Property="TextElement.Foreground" Value="{DynamicResource ThemeBrush_202A3B}"/>
+            <Setter Property="Background" Value="{DynamicResource Settings.SurfaceBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource Settings.TextBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Settings.BorderBrush}"/>
+            <Setter Property="Padding" Value="9,5"/>
+            <Setter Property="TextElement.Foreground" Value="{DynamicResource Settings.TextBrush}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="ComboBorder" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="6"/>
+                            <ContentPresenter Margin="{TemplateBinding Padding}" VerticalAlignment="Center"
+                                              HorizontalAlignment="Left" IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"/>
+                            <ToggleButton x:Name="DropDownToggle" Width="34" HorizontalAlignment="Right"
+                                          Focusable="False" ClickMode="Press"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="Transparent">
+                                            <Path Data="M 0,0 L 4,4 L 8,0"
+                                                  Stroke="{DynamicResource Settings.MutedTextBrush}"
+                                                  StrokeThickness="1.5" HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <Popup x:Name="Popup" Placement="Bottom" AllowsTransparency="True"
+                                   Focusable="False" IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   PopupAnimation="Fade" StaysOpen="False"
+                                   Width="{TemplateBinding ActualWidth}">
+                                <Grid MaxHeight="{TemplateBinding MaxDropDownHeight}" SnapsToDevicePixels="True">
+                                    <Border Background="{DynamicResource Settings.SurfaceBrush}"
+                                            BorderBrush="{DynamicResource Settings.BorderBrush}"
+                                            BorderThickness="1" CornerRadius="6"/>
+                                    <ScrollViewer Margin="4" SnapsToDevicePixels="True">
+                                        <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="ComboBorder" Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
             <Setter Property="ItemContainerStyle">
                 <Setter.Value>
                     <Style TargetType="ComboBoxItem">
-                        <Setter Property="Foreground" Value="{DynamicResource ThemeBrush_202A3B}"/>
-                        <Setter Property="Background" Value="{DynamicResource ThemeBrush_FFFFFF}"/>
-                        <Setter Property="Padding" Value="8,6"/>
+                        <Setter Property="Foreground" Value="{DynamicResource Settings.TextBrush}"/>
+                        <Setter Property="Background" Value="{DynamicResource Settings.SurfaceBrush}"/>
+                        <Setter Property="Padding" Value="7,4"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource Settings.InsetBrush}"/>
+                            </Trigger>
+                        </Style.Triggers>
                     </Style>
                 </Setter.Value>
             </Setter>
         </Style>
         <Style x:Key="CleanupCheckBox" TargetType="CheckBox">
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="{DynamicResource ThemeBrush_202A3B}"/>
+            <Setter Property="FontSize" Value="12"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
@@ -80,6 +233,33 @@
                 </Setter.Value>
             </Setter>
         </Style>
+        <Style x:Key="SettingsToggle" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Grid Width="40" Height="22" Background="Transparent">
+                            <Border x:Name="ToggleTrack" Background="{DynamicResource Settings.BorderBrush}" CornerRadius="11"/>
+                            <Ellipse x:Name="ToggleThumb" Width="16" Height="16"
+                                     Fill="{DynamicResource Settings.TextBrush}"
+                                     HorizontalAlignment="Left" Margin="3,0,0,0"/>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="ToggleTrack" Property="Background" Value="{DynamicResource AccentBrush}"/>
+                                <Setter TargetName="ToggleThumb" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="ToggleThumb" Property="Margin" Value="0,0,3,0"/>
+                                <Setter TargetName="ToggleThumb" Property="Fill" Value="{DynamicResource Settings.TextBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style TargetType="ComboBoxItem">
             <Setter Property="Background" Value="{DynamicResource ThemeBrush_FFFFFF}"/>
             <Setter Property="Foreground" Value="{DynamicResource ThemeBrush_202A3B}"/>
@@ -87,87 +267,96 @@
     </Window.Resources>
 
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="192"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-        <Border Grid.Row="0" Background="{DynamicResource ThemeBrush_172238}" Padding="24,0">
-            <Grid Height="68">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="38" Height="38" CornerRadius="12" Background="{DynamicResource ThemeBrush_5669E8}">
-                        <TextBlock Text="N" Foreground="White" FontSize="21" FontWeight="Bold"
+        <Border Grid.Column="0" Background="#061128" BorderBrush="#142747" BorderThickness="0,0,1,0" Padding="12,18">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Margin="4,0,0,30">
+                    <Border Width="42" Height="42" CornerRadius="13" Background="#5669E8">
+                        <TextBlock Text="N" Foreground="White" FontSize="25" FontWeight="Bold"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
-                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
-                        <TextBlock Text="NOVA" Foreground="White" FontSize="17" FontWeight="Bold"/>
-                        <TextBlock Text="SOFTWARE MANAGER" Foreground="{DynamicResource ThemeBrush_91A0BA}" FontSize="9"/>
+                    <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="NOVA" Foreground="White" FontSize="19" FontWeight="Bold"/>
+                        <TextBlock Text="SOFTWARE MANAGER" Foreground="#91A0BA" FontSize="10.5"/>
                     </StackPanel>
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <Button x:Name="OverviewNavButton" Style="{StaticResource NavButton}" Background="{DynamicResource ThemeBrush_5669E8}" Foreground="White"
+                <StackPanel Grid.Row="1" VerticalAlignment="Top">
+                    <Button x:Name="OverviewNavButton" Style="{StaticResource NavButton}" Background="#203DAD" Foreground="White"
                             Click="OverviewNav_Click">
-                        <StackPanel Orientation="Horizontal"><TextBlock Text="◫" Width="22"/><TextBlock Text="Overview"/></StackPanel>
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="⌂" Width="25" FontSize="18"/><TextBlock Text="Dashboard"/></StackPanel>
                     </Button>
                     <Button x:Name="SoftwareNavButton" Style="{StaticResource NavButton}" Click="SoftwareNav_Click">
-                        <StackPanel Orientation="Horizontal"><TextBlock Text="▤" Width="22"/><TextBlock Text="My software"/></StackPanel>
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="▣" Width="25" FontSize="15"/><TextBlock Text="My software"/></StackPanel>
                     </Button>
                     <Button x:Name="UpdatesNavButton" Style="{StaticResource NavButton}" Click="UpdatesNav_Click">
-                        <StackPanel Orientation="Horizontal"><TextBlock Text="⟳" Width="22"/><TextBlock Text="Updates"/></StackPanel>
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="⟳" Width="25" FontSize="17"/><TextBlock Text="Updates"/></StackPanel>
                     </Button>
                     <Button x:Name="CleanupNavButton" Style="{StaticResource NavButton}" Click="CleanupNav_Click">
-                        <StackPanel Orientation="Horizontal"><TextBlock Text="▱" Width="22"/><TextBlock Text="Storage &amp; cleanup"/></StackPanel>
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="▱" Width="25" FontSize="16"/><TextBlock Text="Storage &amp; Cleanup"/></StackPanel>
+                    </Button>
+                    <Button x:Name="SettingsGearButton" ToolTip="Settings" Click="SettingsNav_Click"
+                            Style="{StaticResource NavButton}" Padding="14,9">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="25"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                            <TextBlock Text="⚙" FontSize="16" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="Settings" VerticalAlignment="Center"/>
+                            <Border x:Name="UpdateBadgeBorder" Grid.Column="1" Background="#D84C5A" BorderBrush="#061128"
+                                    BorderThickness="1" CornerRadius="8" MinWidth="18" Height="17"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top" Padding="4,0"
+                                    Visibility="Collapsed">
+                                <TextBlock x:Name="UpdateBadgeText" Foreground="White" FontSize="10.5" FontWeight="Bold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
                     </Button>
                 </StackPanel>
-                <Button x:Name="SettingsGearButton" Grid.Column="2" ToolTip="Settings" Click="SettingsNav_Click"
-                        Style="{StaticResource NavButton}" Padding="5,4" VerticalAlignment="Center"
-                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
-                    <Grid MinWidth="40" MinHeight="38">
-                        <TextBlock Text="⚙" FontSize="18" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        <Border x:Name="UpdateBadgeBorder" Background="#D84C5A" BorderBrush="{DynamicResource ThemeBrush_172238}"
-                                BorderThickness="1" CornerRadius="9" MinWidth="20" Height="18"
-                                HorizontalAlignment="Right" VerticalAlignment="Top" Padding="4,0"
-                                Visibility="Collapsed">
-                            <TextBlock x:Name="UpdateBadgeText" Foreground="White" FontSize="10" FontWeight="Bold"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                    </Grid>
-                </Button>
+                <StackPanel Grid.Row="2" Margin="4,0,0,8">
+                    <Border Height="1" Background="#1B2D4A" Margin="0,0,0,14"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Ellipse Width="10" Height="10" Fill="#09D2A5" VerticalAlignment="Center"/>
+                        <TextBlock Text="  Ready" Foreground="#D4E0F7" FontSize="12.5" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <TextBlock x:Name="SidebarVersionText" Text="Nova" Foreground="#8294B4" FontSize="10.5" Margin="14,4,0,0"/>
+                </StackPanel>
             </Grid>
         </Border>
 
-        <Grid Grid.Row="1" Margin="36,26,36,16">
+        <Grid Grid.Column="1" Margin="26,22,26,18">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Grid Grid.Row="0" Margin="0,0,0,22">
+            <Grid x:Name="PageHeader" Grid.Row="0" Margin="0,0,0,18">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock x:Name="PageTitle" Text="Good morning" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource ThemeBrush_202A3B}"/>
+                    <TextBlock x:Name="PageTitle" Text="Dashboard" FontSize="28" FontWeight="Bold" Foreground="{DynamicResource ThemeBrush_202A3B}"/>
                     <TextBlock x:Name="PageSubtitle" Text="Your software at a glance. Updates and cleanup stay in your control."
-                               FontSize="13" Foreground="{DynamicResource ThemeBrush_7F8BA0}" Margin="0,6,0,0"/>
+                               FontSize="14" Foreground="{DynamicResource ThemeBrush_7F8BA0}" Margin="0,6,0,0"/>
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <Border Background="{DynamicResource ThemeBrush_FFFFFF}" BorderBrush="{DynamicResource ThemeBrush_E8ECF3}"
                             BorderThickness="1" CornerRadius="10" Padding="12,8" Margin="0,0,12,0" VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="LAST SCAN" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10"
+                            <TextBlock Text="LAST SCAN" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11.5"
                                        FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBlock x:Name="LastScanText" Text="Not scanned yet" Foreground="{DynamicResource ThemeBrush_39465B}"
-                                       FontSize="12" VerticalAlignment="Center"/>
+                                       FontSize="13.5" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
-                    <Button x:Name="ScanButton" Content="Scan this PC" Click="ScanButton_Click" MinWidth="130"/>
+                    <Button x:Name="ScanButton" Content="Scan for updates" Click="ScanButton_Click" MinWidth="130"/>
                 </StackPanel>
             </Grid>
             <TabControl x:Name="MainTabs" Grid.Row="1" Background="Transparent" BorderThickness="0"
@@ -177,98 +366,320 @@
                         <ContentPresenter ContentSource="SelectedContent"/>
                     </ControlTemplate>
                 </TabControl.Template>
-                <TabItem Header="Overview">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="0,10,0,0">
-                            <Border CornerRadius="14" Padding="25" Margin="0,0,0,18">
-                                <Border.Background>
-                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                        <GradientStop Color="{DynamicResource ThemeColor_5268E8}" Offset="0"/>
-                                        <GradientStop Color="{DynamicResource ThemeColor_7657DF}" Offset="1"/>
-                                    </LinearGradientBrush>
-                                </Border.Background>
+                <TabItem Header="Dashboard">
+                    <Grid x:Name="DashboardRoot" Background="#07142B">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" MinHeight="106" CornerRadius="14" BorderThickness="1"
+                                BorderBrush="#24447C" Margin="0,0,0,12" Padding="20,15" ClipToBounds="True">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                    <GradientStop Color="#102D63" Offset="0"/>
+                                    <GradientStop Color="#0A1E42" Offset="0.57"/>
+                                    <GradientStop Color="#081832" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <Grid>
+                                <Path Data="M 0,105 L 115,50 L 185,82 L 305,30 L 382,76 L 478,18 L 576,84 L 680,38 L 774,98 L 885,51 L 1000,105 Z"
+                                      Fill="#17386D" Opacity="0.55" HorizontalAlignment="Right" Width="780"
+                                      Stretch="Fill" IsHitTestVisible="False"/>
+                                <Path Data="M 0,106 L 180,72 L 290,96 L 420,54 L 545,90 L 655,65 L 810,106 Z"
+                                      Fill="#244A83" Opacity="0.35" HorizontalAlignment="Right" Width="780"
+                                      Stretch="Fill" IsHitTestVisible="False"/>
                                 <Grid>
-                                    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="226"/>
+                                    </Grid.ColumnDefinitions>
                                     <StackPanel VerticalAlignment="Center">
-                                        <TextBlock Text="UPDATE CHECK" Foreground="{DynamicResource ThemeBrush_DCE1FF}" FontSize="10" FontWeight="Bold"/>
-                                        <TextBlock x:Name="HeroTitle" Text="Scan for updates outside Microsoft Store"
-                                                   Foreground="White" FontSize="21" FontWeight="Bold" Margin="0,10,0,5"/>
-                                        <TextBlock Text="Checks for update candidates in the winget source, not the Microsoft Store catalog."
-                                                   Foreground="{DynamicResource ThemeBrush_E6E8FF}" FontSize="12" TextWrapping="Wrap"/>
-                                        <Button Content="Open updates" HorizontalAlignment="Left" Margin="0,17,0,0"
-                                                Background="White" Foreground="{DynamicResource ThemeBrush_4F5FD0}" Click="UpdatesNav_Click"/>
+                                        <TextBlock Text="✦   WELCOME BACK" Foreground="#739AFF" FontSize="11.5" FontWeight="Bold"/>
+                                        <TextBlock x:Name="DashboardGreetingText" Text="Good morning"
+                                                   Foreground="#F4F7FF" FontSize="25" FontWeight="Bold" Margin="0,5,0,2"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="Your software is at a glance. Updates and system performance, all in one place."
+                                                   Foreground="#CBD8F0" FontSize="12.5" TextWrapping="Wrap"/>
                                     </StackPanel>
-                                    <TextBlock Grid.Column="1" Text="⟳" FontSize="53" Foreground="#FFFFFF" Opacity="0.42"
-                                               VerticalAlignment="Center" Margin="22,0,10,0"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,0,0">
+                                        <Border Background="#0B1B36" BorderBrush="#203B69" BorderThickness="1"
+                                                CornerRadius="9" Padding="9,5" Margin="0,0,0,6">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="28"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                                <TextBlock Text="▦" Foreground="#54BDFB" FontSize="17" VerticalAlignment="Center"/>
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Text="Last scan" Foreground="#D9E5FA" FontSize="10.5"/>
+                                                    <TextBlock x:Name="DashboardLastScanText" Text="Not scanned yet"
+                                                               Foreground="#9FB3D2" FontSize="10.5" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                        <Button x:Name="DashboardScanButton" Content="⌕   Scan for Updates"
+                                                Click="ScanButton_Click" MinHeight="35" Padding="10,7"
+                                                Background="#3E5FFF" Foreground="White" FontSize="12.5"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Grid>
+                        </Border>
+
+                        <Grid Grid.Row="1" Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Background="#0A1D43" BorderBrush="#2354B7" BorderThickness="1"
+                                    CornerRadius="12" Padding="13" Margin="0,0,6,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="44"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                    <Border Width="40" Height="40" CornerRadius="11" Background="#273BC2" VerticalAlignment="Center">
+                                        <TextBlock Text="⬡" Foreground="#E2E8FF" FontSize="24" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                                        <TextBlock Text="Software Installed" Foreground="#D5E2FA" FontSize="11.5" FontWeight="SemiBold"/>
+                                        <TextBlock x:Name="InstalledCountText" Text="—" Foreground="#F4F7FF" FontSize="23" FontWeight="Bold"/>
+                                        <TextBlock x:Name="InstalledSummaryText" Text="Scan to count installed apps"
+                                                   Foreground="#AABBDD" FontSize="10.5" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <Border Grid.Column="1" Background="#062B34" BorderBrush="#087F73" BorderThickness="1"
+                                    CornerRadius="12" Padding="13" Margin="6,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="44"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                    <Border Width="40" Height="40" CornerRadius="11" Background="#087968" VerticalAlignment="Center">
+                                        <TextBlock Text="⟳" Foreground="#B8FFF0" FontSize="25" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                                        <TextBlock Text="Available Updates" Foreground="#D5F8F0" FontSize="11.5" FontWeight="SemiBold"/>
+                                        <TextBlock x:Name="UpdatesCountText" Text="—" Foreground="#F4FFFC" FontSize="23" FontWeight="Bold"/>
+                                        <TextBlock x:Name="UpdatesSummaryText" Text="Scan to check available updates"
+                                                   Foreground="#A9D8D0" FontSize="10.5" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <Border Grid.Column="2" Background="#2D251A" BorderBrush="#C37D17" BorderThickness="1"
+                                    CornerRadius="12" Padding="13" Margin="6,0,0,0">
+                                <Grid>
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="44"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                    <Border Width="40" Height="40" CornerRadius="11" Background="#A66500" VerticalAlignment="Center">
+                                        <TextBlock Text="▰" Foreground="#FFF0CB" FontSize="23" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                                        <TextBlock Text="Temporary Files" Foreground="#FFF0D5" FontSize="11.5" FontWeight="SemiBold"/>
+                                        <TextBlock x:Name="TempSizeText" Text="—" Foreground="#FFF9ED" FontSize="23" FontWeight="Bold"/>
+                                        <TextBlock x:Name="TempCountText" Text="Scan to estimate"
+                                                   Foreground="#E2C9A1" FontSize="10.5" TextTrimming="CharacterEllipsis"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </Grid>
+
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="1.55*"/>
+                                <ColumnDefinition Width="1*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Background="#071A38" BorderBrush="#1A3765" BorderThickness="1"
+                                    CornerRadius="14" Padding="15" Margin="0,0,7,0">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="*"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="System Performance" Foreground="#EEF4FF" FontSize="17" FontWeight="Bold"/>
+                                            <TextBlock Text="Live system monitoring" Foreground="#99B2D6" FontSize="11.5" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <Border Grid.Column="1" Background="#063B46" CornerRadius="12" Padding="9,5" VerticalAlignment="Center">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Ellipse Width="8" Height="8" Fill="#05D4A4" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="DashboardMonitoringStatusText" Text="  Monitoring active"
+                                                           Foreground="#B5F5E7" FontSize="10.5" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Grid>
+                                    <UniformGrid Grid.Row="1" Columns="4" Margin="0,12,0,7">
+                                        <StackPanel Margin="3,0">
+                                            <TextBlock Text="CPU Usage" Foreground="#D6E3F8" FontSize="11.5" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="CpuUsageText" Text="Unavailable" Foreground="#5575FF" FontSize="19" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,5,0,3"/>
+                                            <ProgressBar x:Name="CpuUsageBar" Minimum="0" Maximum="100" Height="5" Background="#142B50" Foreground="#5575FF" BorderThickness="0"/>
+                                            <TextBlock x:Name="CpuTemperatureText" Text="CPU temp: Unavailable" Foreground="#91A9CE" FontSize="10.5" HorizontalAlignment="Center" Margin="0,5,0,0" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="3,0">
+                                            <TextBlock Text="GPU Usage" Foreground="#D6E3F8" FontSize="11.5" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="GpuUsageText" Text="Unavailable" Foreground="#00C99C" FontSize="19" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,5,0,3"/>
+                                            <ProgressBar x:Name="GpuUsageBar" Minimum="0" Maximum="100" Height="5" Background="#142B50" Foreground="#00C99C" BorderThickness="0"/>
+                                            <TextBlock x:Name="GpuTemperatureText" Text="GPU temp: Unavailable" Foreground="#91A9CE" FontSize="10.5" HorizontalAlignment="Center" Margin="0,5,0,0" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="3,0">
+                                            <TextBlock Text="VRAM Usage" Foreground="#D6E3F8" FontSize="11.5" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="VramUsageText" Text="Unavailable" Foreground="#D942DE" FontSize="19" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,5,0,3"/>
+                                            <ProgressBar x:Name="VramUsageBar" Minimum="0" Maximum="100" Height="5" Background="#142B50" Foreground="#D942DE" BorderThickness="0"/>
+                                            <TextBlock x:Name="VramBreakdownText" Text="Unavailable / Unavailable" Foreground="#91A9CE" FontSize="10.5" HorizontalAlignment="Center" Margin="0,5,0,0" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="3,0">
+                                            <TextBlock Text="RAM Usage" Foreground="#D6E3F8" FontSize="11.5" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                            <TextBlock x:Name="RamUsageText" Text="Unavailable" Foreground="#19B8F3" FontSize="19" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,5,0,3"/>
+                                            <ProgressBar x:Name="RamUsageBar" Minimum="0" Maximum="100" Height="5" Background="#142B50" Foreground="#19B8F3" BorderThickness="0"/>
+                                            <TextBlock x:Name="RamBreakdownText" Text="Unavailable / Unavailable" Foreground="#91A9CE" FontSize="10.5" HorizontalAlignment="Center" Margin="0,5,0,0" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </UniformGrid>
+                                    <Grid Grid.Row="2" Margin="0,0,0,7">
+                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Ellipse Width="7" Height="7" Fill="#5575FF" VerticalAlignment="Center"/>
+                                            <TextBlock Text=" CPU" Foreground="#B4C5E1" FontSize="10.5"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Ellipse Width="7" Height="7" Fill="#00C99C" VerticalAlignment="Center"/>
+                                            <TextBlock Text=" GPU" Foreground="#B4C5E1" FontSize="10.5"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Ellipse Width="7" Height="7" Fill="#19B8F3" VerticalAlignment="Center"/>
+                                            <TextBlock Text=" RAM" Foreground="#B4C5E1" FontSize="10.5"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Ellipse Width="7" Height="7" Fill="#D942DE" VerticalAlignment="Center"/>
+                                            <TextBlock Text=" VRAM" Foreground="#B4C5E1" FontSize="10.5"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <Grid Grid.Row="3">
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                        <Grid Margin="0,0,0,5">
+                                            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                            <TextBlock Text="Live usage history" Foreground="#D9E6FA" FontSize="10.5" VerticalAlignment="Center"/>
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock x:Name="PerformanceHistoryCoverageText" Text="Waiting for samples"
+                                                           Foreground="#7892B8" FontSize="10.5" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                                <Button x:Name="DashboardRange1HButton" Content="1H" Tag="1"
+                                                        Click="DashboardRange_Click" Padding="8,3" FontSize="10.5" Margin="2,0"
+                                                        Background="#405FFF"/>
+                                                <Button x:Name="DashboardRange6HButton" Content="6H" Tag="6"
+                                                        Click="DashboardRange_Click" Padding="8,3" FontSize="10.5" Margin="2,0"
+                                                        Background="#122546" Foreground="#A8B9D3"/>
+                                                <Button x:Name="DashboardRange24HButton" Content="24H" Tag="24"
+                                                        Click="DashboardRange_Click" Padding="8,3" FontSize="10.5" Margin="2,0"
+                                                        Background="#122546" Foreground="#A8B9D3"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Border Grid.Row="1" CornerRadius="7" Background="#05132B" BorderBrush="#12294C"
+                                                BorderThickness="1" ClipToBounds="True">
+                                            <Grid>
+                                                <Canvas x:Name="PerformanceChart" SizeChanged="PerformanceChart_SizeChanged"
+                                                        Background="Transparent" ClipToBounds="True"/>
+                                                <TextBlock x:Name="PerformanceChartEmptyText" Text="Collecting live history…"
+                                                           Foreground="#6F88AD" FontSize="10.5"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                           IsHitTestVisible="False"/>
+                                            </Grid>
+                                        </Border>
+                                    </Grid>
                                 </Grid>
                             </Border>
 
-                            <UniformGrid Columns="3" Margin="0,0,0,24">
-                                <Border Style="{StaticResource Card}" Margin="0,0,12,0">
-                                    <StackPanel>
-                                        <TextBlock Text="INSTALLED SOFTWARE" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" FontWeight="SemiBold"/>
-                                        <TextBlock x:Name="InstalledCountText" Text="—" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="28" FontWeight="Bold" Margin="0,6,0,0"/>
-                                        <TextBlock Text="apps and games found" Foreground="{DynamicResource ThemeBrush_98A3B5}" FontSize="11"/>
-                                    </StackPanel>
+                            <Grid Grid.Column="1" Margin="7,0,0,0">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="1.25*"/>
+                                    <RowDefinition Height="*"/>
+                                </Grid.RowDefinitions>
+                                <Border Grid.Row="0" Background="#071A38" BorderBrush="#1A3765" BorderThickness="1"
+                                        CornerRadius="14" Padding="12" Margin="0,0,0,6">
+                                    <Grid>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                        <StackPanel Margin="0,0,0,5">
+                                            <TextBlock Text="System" Foreground="#EEF4FF" FontSize="15" FontWeight="Bold"/>
+                                            <TextBlock Text="Your PC specifications" Foreground="#99B2D6" FontSize="10.5" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <ItemsControl Grid.Row="1" ItemsSource="{Binding DashboardSpecifications}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate><UniformGrid Columns="1"/></ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid MinHeight="19" Margin="0,1">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="19"/>
+                                                            <ColumnDefinition Width="87"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="{Binding Icon}" Foreground="#7C9FFF" FontSize="12.5" VerticalAlignment="Center"/>
+                                                        <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="#A8BDDC"
+                                                                   FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Grid.Column="2" Text="{Binding Value}" Foreground="#D6E3F8"
+                                                                   FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                                   ToolTip="{Binding Value}"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
                                 </Border>
-                                <Border Style="{StaticResource Card}" Margin="12,0">
-                                    <StackPanel>
-                                        <TextBlock Text="WINGET UPDATES" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" FontWeight="SemiBold"/>
-                                        <TextBlock x:Name="UpdatesCountText" Text="—" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="28" FontWeight="Bold" Margin="0,6,0,0"/>
-                                        <TextBlock Text="found in the winget source" Foreground="{DynamicResource ThemeBrush_98A3B5}" FontSize="11"/>
-                                    </StackPanel>
-                                </Border>
-                                <Border Style="{StaticResource Card}" Margin="12,0,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="TEMP FILES FOUND" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" FontWeight="SemiBold"/>
-                                        <TextBlock x:Name="TempSizeText" Text="—" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="28" FontWeight="Bold" Margin="0,6,0,0"/>
-                                        <TextBlock x:Name="TempCountText" Text="Preview before removing" Foreground="{DynamicResource ThemeBrush_98A3B5}" FontSize="11"/>
-                                    </StackPanel>
-                                </Border>
-                            </UniformGrid>
-
-                            <Grid>
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="1.3*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
-                                <Border Style="{StaticResource Card}" Margin="0,0,12,0">
-                                    <StackPanel>
-                                        <TextBlock Text="Updates to review" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="16" FontWeight="Bold"/>
-                                        <TextBlock x:Name="UpdatesSummaryText" Text="Run a scan to check apps in the winget source."
-                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,8,0,18" TextWrapping="Wrap"/>
-                                        <DataGrid x:Name="OverviewUpdatesGrid" Height="176" ItemsSource="{Binding Updates}"
-                                                  HeadersVisibility="None" RowHeight="42">
-                                            <DataGrid.Columns>
-                                                <DataGridTextColumn Header="App" Binding="{Binding Name}" Width="*"/>
-                                                <DataGridTextColumn Header="Version" Binding="{Binding AvailableVersion}" Width="100"/>
-                                            </DataGrid.Columns>
-                                        </DataGrid>
-                                    </StackPanel>
-                                </Border>
-                                <Border Grid.Column="1" Style="{StaticResource Card}" Margin="12,0,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="Temporary files" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="16" FontWeight="Bold"/>
-                                        <TextBlock Text="Scans %TEMP% and the Windows Temp folder. Locked or protected files may be skipped."
-                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,8,0,18" TextWrapping="Wrap"/>
-                                        <Border Background="{DynamicResource ThemeBrush_F6F8FC}" CornerRadius="9" Padding="13">
-                                            <StackPanel>
-                                                <TextBlock Text="%TEMP% and Windows\Temp" Foreground="{DynamicResource ThemeBrush_39465B}" FontWeight="SemiBold" FontSize="12"/>
-                                                <TextBlock x:Name="TempSummaryText" Text="Run a scan to see the removable file estimate."
-                                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11" Margin="0,5,0,0" TextWrapping="Wrap"/>
-                                            </StackPanel>
-                                        </Border>
-                                    </StackPanel>
+                                <Border Grid.Row="1" Background="#071A38" BorderBrush="#1A3765" BorderThickness="1"
+                                        CornerRadius="14" Padding="12" Margin="0,6,0,0">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="1.1*"/><ColumnDefinition Width="1*"/></Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                        <StackPanel Grid.ColumnSpan="2" Margin="0,0,0,5">
+                                            <TextBlock Text="Windows" Foreground="#EEF4FF" FontSize="14" FontWeight="Bold"/>
+                                            <TextBlock Text="Storage &amp; OS information" Foreground="#99B2D6" FontSize="10.5" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                            <ItemsControl ItemsSource="{Binding DashboardDrives}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <StackPanel Margin="0,2,8,4">
+                                                            <Grid>
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+                                                                <TextBlock Text="{Binding Name}" Foreground="#D5E2F7" FontSize="10.5"
+                                                                           TextTrimming="CharacterEllipsis"/>
+                                                                <TextBlock Grid.Column="1" Text="{Binding Used}" Foreground="#9FB4D4" FontSize="11"/>
+                                                                <TextBlock Grid.Column="2" Text=" / " Foreground="#9FB4D4" FontSize="11"/>
+                                                                <TextBlock Grid.Column="3" Text="{Binding Capacity}" Foreground="#9FB4D4" FontSize="11"/>
+                                                            </Grid>
+                                                            <ProgressBar Minimum="0" Maximum="100" Value="{Binding UsedPercentage}"
+                                                                         Height="4" Background="#142B50" Foreground="#4F8CFF" BorderThickness="0"
+                                                                         Margin="0,3,0,0"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                        <StackPanel Grid.Column="1" Grid.Row="1" Margin="8,0,0,0">
+                                            <TextBlock Text="Windows version" Foreground="#9FB4D4" FontSize="10.5"/>
+                                            <TextBlock x:Name="WindowsVersionText" Text="Unavailable" Foreground="#D5E2F7"
+                                                       FontSize="11" TextWrapping="Wrap" Margin="0,1,0,6"/>
+                                            <TextBlock Text="System type" Foreground="#9FB4D4" FontSize="10.5"/>
+                                            <TextBlock x:Name="WindowsArchitectureText" Text="Unavailable" Foreground="#D5E2F7"
+                                                       FontSize="11" Margin="0,1,0,6"/>
+                                            <TextBlock Text="Last boot" Foreground="#9FB4D4" FontSize="10.5"/>
+                                            <TextBlock x:Name="WindowsLastBootText" Text="Unavailable" Foreground="#D5E2F7"
+                                                       FontSize="11" TextWrapping="Wrap" Margin="0,1,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
                                 </Border>
                             </Grid>
-                        </StackPanel>
-                    </ScrollViewer>
+                        </Grid>
+                    </Grid>
                 </TabItem>
 
                 <TabItem Header="My software">
                     <Border Style="{StaticResource Card}" Margin="0,10,0,0">
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Top" Margin="0,0,0,14">
-                                <TextBlock Text="Installed apps and games" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="18" FontWeight="Bold"/>
+                                <TextBlock Text="Installed apps and games" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="19" FontWeight="Bold"/>
                                 <TextBlock Text="Detected from Windows installed-program records and your Windows app packages."
-                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,5,0,0"/>
+                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="13.5" Margin="0,5,0,0"/>
                             </StackPanel>
                             <DataGrid ItemsSource="{Binding Software}">
                                 <DataGrid.Columns>
@@ -286,16 +697,16 @@
                     <Border Style="{StaticResource Card}" Margin="0,10,0,0">
                         <DockPanel>
                             <StackPanel DockPanel.Dock="Top" Margin="0,0,0,14">
-                                <TextBlock Text="Available updates" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="18" FontWeight="Bold"/>
+                                <TextBlock Text="Available updates" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="19" FontWeight="Bold"/>
                                 <TextBlock Text="Scans Nova Manager, winget, Microsoft Store packages and Windows Update. App updates remain under your control; Windows updates are never installed here."
-                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,5,0,10" TextWrapping="Wrap"/>
+                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="13.5" Margin="0,5,0,10" TextWrapping="Wrap"/>
                                 <Border Background="{DynamicResource ThemeBrush_F7F8FB}" CornerRadius="9" Padding="12" Margin="0,0,0,8">
                                     <Grid>
                                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                         <StackPanel>
-                                            <TextBlock Text="Nova Manager" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="12" FontWeight="Bold"/>
+                                            <TextBlock Text="Nova Manager" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="13.5" FontWeight="Bold"/>
                                             <TextBlock x:Name="NovaUpdateScanStatusText" Text="Scan to check for a Nova update."
-                                                       Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                                       Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="12.5" Margin="0,3,0,0" TextWrapping="Wrap"/>
                                         </StackPanel>
                                         <Button Grid.Column="1" Content="Nova update settings" Style="{StaticResource SecondaryButton}"
                                                 VerticalAlignment="Center" Click="OpenNovaUpdateSettings_Click"/>
@@ -305,9 +716,9 @@
                                     <Grid>
                                         <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                         <StackPanel>
-                                            <TextBlock Text="Windows Update" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="12" FontWeight="Bold"/>
+                                            <TextBlock Text="Windows Update" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="13.5" FontWeight="Bold"/>
                                             <TextBlock x:Name="WindowsUpdateScanStatusText" Text="Scan to check Windows Update."
-                                                       Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="11" Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                                       Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="12.5" Margin="0,3,0,0" TextWrapping="Wrap"/>
                                         </StackPanel>
                                         <Button x:Name="OpenWindowsUpdateButton" Grid.Column="1" Content="Open Windows Update"
                                                 Style="{StaticResource SecondaryButton}" VerticalAlignment="Center"
@@ -316,7 +727,7 @@
                                 </Border>
                                 <TextBlock x:Name="StoreUpdateScanStatusText"
                                            Text="Microsoft Store updates are checked through the Windows Package Manager Store source."
-                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11" Margin="0,0,0,4"
+                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12.5" Margin="0,0,0,4"
                                            TextWrapping="Wrap"/>
                             </StackPanel>
                             <DataGrid x:Name="UpdatesGrid" ItemsSource="{Binding Updates}">
@@ -348,9 +759,9 @@
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
                             <StackPanel Grid.Row="0">
-                                <TextBlock Text="Storage &amp; organization" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="20" FontWeight="Bold"/>
+                                <TextBlock Text="Storage &amp; organization" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="21" FontWeight="Bold"/>
                                 <TextBlock Text="Explore where space is used. Unknown means needs review, not safe to delete."
-                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,7,0,12" TextWrapping="Wrap"/>
+                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="13.5" Margin="0,7,0,12" TextWrapping="Wrap"/>
                             </StackPanel>
                             <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,12">
                                 <Button x:Name="TempSectionButton" Content="Temporary files" Style="{StaticResource SecondaryButton}"
@@ -363,80 +774,87 @@
                             <Grid Grid.Row="2">
                                 <Grid x:Name="TempCleanupPanel">
                                     <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="2.1*"/>
+                                        <ColumnDefinition Width="1.7*"/>
                                         <ColumnDefinition Width="1*"/>
                                     </Grid.ColumnDefinitions>
                                     <Grid.RowDefinitions><RowDefinition Height="*"/></Grid.RowDefinitions>
-                                    <Grid Grid.Column="0" Margin="0,0,20,0">
+                                    <Grid Grid.Column="0" Margin="0,0,16,0">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="Auto"/>
                                             <RowDefinition Height="*"/>
                                             <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="*"/>
                                             <RowDefinition Height="Auto"/>
                                         </Grid.RowDefinitions>
-                                        <StackPanel Grid.Row="0" Margin="0,0,0,18">
-                                            <TextBlock Text="Temporary files and caches" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="18" FontWeight="Bold"/>
-                                            <TextBlock Text="Scan the listed Windows, graphics, and browser-cache locations. Select the files or locations you want, then confirm Cleanup files."
-                                                       Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,7,0,0" TextWrapping="Wrap"/>
-                                        </StackPanel>
-                                        <Border Grid.Row="1" Background="{DynamicResource ThemeBrush_F4F7FF}" BorderBrush="{DynamicResource ThemeBrush_E5EBFA}" BorderThickness="1"
-                                                CornerRadius="10" Padding="18,16" Margin="0,0,0,18">
+                                        <Grid Grid.Row="0" Margin="0,0,0,12">
+                                            <Grid.ColumnDefinitions><ColumnDefinition Width="52"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                            <Border Width="44" Height="44" CornerRadius="11" Background="{DynamicResource ThemeBrush_EEF2FF}">
+                                                <TextBlock Text="♻" FontSize="25" Foreground="{DynamicResource ThemeBrush_596DE0}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                                                <TextBlock Text="Temporary Files" Foreground="{DynamicResource ThemeBrush_202A3B}"
+                                                           FontSize="20" FontWeight="Bold"/>
+                                                <TextBlock Text="Review scanned files and choose what to remove."
+                                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12.5"
+                                                           Margin="0,3,0,0" TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Border Grid.Row="1" Background="{DynamicResource ThemeBrush_F7F8FB}"
+                                                BorderBrush="{DynamicResource ThemeBrush_E8ECF3}" BorderThickness="1"
+                                                CornerRadius="9" Padding="12,8" Margin="0,0,0,8">
                                             <Grid>
-                                                <Grid.ColumnDefinitions><ColumnDefinition Width="44"/><ColumnDefinition/></Grid.ColumnDefinitions>
-                                                <TextBlock Text="ⓘ" FontSize="22" Foreground="{DynamicResource ThemeBrush_5669E8}" VerticalAlignment="Center"/>
-                                                <StackPanel Grid.Column="1">
-                                                    <TextBlock Text="Cleanup files" Foreground="{DynamicResource ThemeBrush_25334A}" FontSize="13" FontWeight="Bold"/>
-                                                    <TextBlock Text="Only checked files from these approved locations are removed. Browser caches may be in use until Edge or Chrome is closed."
-                                                               Foreground="{DynamicResource ThemeBrush_71809A}" FontSize="11" Margin="0,5,0,0" TextWrapping="Wrap"/>
-                                                </StackPanel>
+                                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                <CheckBox x:Name="SelectAllCleanupCheckBox" Content="Select all scanned files"
+                                                          IsThreeState="True" Style="{StaticResource CleanupCheckBox}"
+                                                          Click="SelectAllCleanupCheckBox_Click"/>
+                                                <TextBlock Grid.Column="1" x:Name="CleanupTotalEstimateText" Text="Scan to estimate"
+                                                           Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="11.5"
+                                                           VerticalAlignment="Center"/>
                                             </Grid>
                                         </Border>
                                         <DataGrid Grid.Row="2" x:Name="CleanupCategoriesGrid" ItemsSource="{Binding CleanupCategories}"
-                                                  HeadersVisibility="None" MinHeight="220" RowHeight="88"
+                                                  HeadersVisibility="None" MinHeight="190" RowHeight="62"
                                                   SelectionUnit="FullRow" SelectionMode="Single">
                                             <DataGrid.Columns>
                                                 <DataGridTemplateColumn Width="*">
                                                     <DataGridTemplateColumn.CellTemplate>
                                                         <DataTemplate>
-                                                            <Grid Margin="6,10">
+                                                            <Grid Margin="4,5">
                                                                 <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="32"/>
                                                                     <ColumnDefinition Width="38"/>
-                                                                    <ColumnDefinition Width="44"/>
                                                                     <ColumnDefinition Width="*"/>
-                                                                    <ColumnDefinition Width="112"/>
-                                                                    <ColumnDefinition Width="125"/>
-                                                                    <ColumnDefinition Width="104"/>
+                                                                    <ColumnDefinition Width="86"/>
+                                                                    <ColumnDefinition Width="28"/>
                                                                 </Grid.ColumnDefinitions>
                                                                 <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                           IsEnabled="{Binding IsSelectedAllowed}" Tag="{Binding}"
                                                                           VerticalAlignment="Center" HorizontalAlignment="Center"
                                                                           Style="{StaticResource CleanupCheckBox}"
                                                                           Click="CleanupCategoryCheckBox_Click"/>
-                                                                <Border Grid.Column="1" Width="29" Height="29" CornerRadius="8"
+                                                                <Border Grid.Column="1" Width="30" Height="30" CornerRadius="8"
                                                                         Background="{DynamicResource ThemeBrush_EEF2FF}" VerticalAlignment="Center">
-                                                                    <TextBlock Text="{Binding Icon}" FontSize="15" Foreground="{DynamicResource ThemeBrush_596DE0}"
+                                                                    <TextBlock Text="{Binding Icon}" FontSize="16" Foreground="{DynamicResource ThemeBrush_596DE0}"
                                                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                                 </Border>
-                                                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="12,0">
-                                                                    <TextBlock Text="{Binding Name}" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="12" FontWeight="SemiBold"/>
-                                                                    <TextBlock Text="{Binding Description}" Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="10"
-                                                                               TextWrapping="Wrap" TextTrimming="CharacterEllipsis"/>
-                                                                    <TextBlock Text="{Binding Path}" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="9"
-                                                                               TextTrimming="CharacterEllipsis"/>
+                                                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="8,0">
+                                                                    <TextBlock Text="{Binding Name}" Foreground="{DynamicResource ThemeBrush_202A3B}"
+                                                                               FontSize="12.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                                    <TextBlock Text="{Binding Description}" Foreground="{DynamicResource ThemeBrush_53627A}"
+                                                                               FontSize="10.5" TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                                                               MaxHeight="24"/>
                                                                 </StackPanel>
-                                                                <StackPanel Grid.Column="3" VerticalAlignment="Center">
-                                                                    <TextBlock Text="Estimated size" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="9"/>
-                                                                    <TextBlock Text="{Binding FormattedBytes}" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="11" FontWeight="SemiBold"/>
-                                                                    <TextBlock Text="{Binding FileCount, StringFormat={}{0:N0} files}" Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="9"/>
+                                                                <StackPanel Grid.Column="3" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                                                    <TextBlock Text="{Binding FormattedBytes}" Foreground="{DynamicResource ThemeBrush_202A3B}"
+                                                                               FontSize="11.5" FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                                                    <TextBlock Text="{Binding FileCount, StringFormat={}{0:N0} files}"
+                                                                               Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="10.5"
+                                                                               HorizontalAlignment="Right"/>
                                                                 </StackPanel>
-                                                                <Border Grid.Column="4" Background="{DynamicResource ThemeBrush_F0F3F8}" CornerRadius="12"
-                                                                        Padding="8,4" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                                                    <TextBlock Text="{Binding Status}" Foreground="{DynamicResource ThemeBrush_64738A}" FontSize="9" FontWeight="SemiBold"/>
-                                                                </Border>
-                                                                <Button Grid.Column="5" Content="Open folder" Padding="7,6" Tag="{Binding}"
+                                                                <Button Grid.Column="4" Content="›" Padding="2,0" Tag="{Binding}"
                                                                         IsEnabled="{Binding IsAvailable}" Style="{StaticResource SecondaryButton}"
+                                                                        ToolTip="Open this cleanup location"
                                                                         Click="BrowseCleanupCategory_Click"/>
                                                             </Grid>
                                                         </DataTemplate>
@@ -444,18 +862,18 @@
                                                 </DataGridTemplateColumn>
                                             </DataGrid.Columns>
                                         </DataGrid>
-                                        <Grid Grid.Row="4" Margin="0,16,0,12">
+                                        <Grid Grid.Row="3" Margin="0,10,0,8">
                                             <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                             <StackPanel>
-                                                <TextBlock Text="Detailed scan results" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="12" FontWeight="Bold"/>
+                                                <TextBlock Text="Detailed file review" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="12.5" FontWeight="Bold"/>
                                                 <TextBlock x:Name="TempSelectionSummaryText" Text="Scan to review supported temporary and cache locations."
-                                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" Margin="0,5,0,0"/>
+                                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10.5" Margin="0,3,0,0"/>
                                             </StackPanel>
-                                            <Button x:Name="ToggleTempFilesButton" Grid.Column="1" Content="View all files"
-                                                    Style="{StaticResource SecondaryButton}" Padding="10,7" Click="ToggleTempFiles_Click"/>
+                                            <Button x:Name="ToggleTempFilesButton" Grid.Column="1" Content="View files"
+                                                    Style="{StaticResource SecondaryButton}" Padding="9,6" Click="ToggleTempFiles_Click"/>
                                         </Grid>
                                         <DataGrid Grid.Row="4" x:Name="TempFilesGrid" ItemsSource="{Binding TempFiles}"
-                                                  MinHeight="90" EnableRowVirtualization="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                                  MinHeight="90" MaxHeight="180" EnableRowVirtualization="True" VirtualizingPanel.VirtualizationMode="Recycling"
                                                   SelectionUnit="FullRow" SelectionMode="Single"
                                                   Visibility="Collapsed">
                                             <DataGrid.Columns>
@@ -470,58 +888,102 @@
                                                     </DataGridTemplateColumn.CellTemplate>
                                                 </DataGridTemplateColumn>
                                                 <DataGridTextColumn Header="FILE PATH" Binding="{Binding Path}" Width="*"/>
-                                                <DataGridTextColumn Header="SIZE" Binding="{Binding FormattedBytes}" Width="78"/>
-                                                <DataGridTextColumn Header="LAST MODIFIED" Binding="{Binding LastWriteTimeUtc, StringFormat={}{0:g}}" Width="125"/>
+                                                <DataGridTextColumn Header="SIZE" Binding="{Binding FormattedBytes}" Width="68"/>
+                                                <DataGridTextColumn Header="MODIFIED" Binding="{Binding LastWriteTimeUtc, StringFormat={}{0:g}}" Width="105"/>
                                             </DataGrid.Columns>
                                         </DataGrid>
-                                        <TextBlock Grid.Row="5" Text="Only checked files shown in this scan can be removed. Changed, locked, protected, and linked items are skipped. Folders are never deleted."
-                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" Margin="0,14,0,0" TextWrapping="Wrap"/>
                                     </Grid>
-                                    <StackPanel Grid.Column="1">
-                                        <Border Background="{DynamicResource ThemeBrush_FFFFFF}" BorderBrush="{DynamicResource ThemeBrush_E8ECF3}" BorderThickness="1"
-                                                CornerRadius="12" Padding="22" Margin="0,0,0,18">
+                                    <Grid Grid.Column="1">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                             <StackPanel>
-                                                <TextBlock Text="Cleanup summary" Foreground="{DynamicResource ThemeBrush_29364B}" FontSize="14" FontWeight="Bold"/>
-                                                <TextBlock x:Name="SelectedTempSizeText" Text="0 B" Foreground="{DynamicResource ThemeBrush_25334A}"
-                                                           FontSize="26" FontWeight="Bold" Margin="0,14,0,2"/>
-                                                <TextBlock Text="selected to be freed (estimate)" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10"/>
-                                                <Separator Margin="0,16"/>
-                                                <TextBlock x:Name="SelectedTempCountText" Text="0 files · 0 locations selected"
-                                                           Foreground="{DynamicResource ThemeBrush_58667B}" FontSize="11"/>
-                                                <Border Background="{DynamicResource ThemeBrush_F0F5FF}" CornerRadius="8" Padding="14,12" Margin="0,16,0,0">
-                                                    <TextBlock Text="Locked or protected files may be skipped. This keeps Windows and running apps stable."
-                                                               Foreground="{DynamicResource ThemeBrush_617391}" FontSize="10" TextWrapping="Wrap"/>
+                                                <Border Background="{DynamicResource ThemeBrush_FFFFFF}" BorderBrush="{DynamicResource ThemeBrush_E8ECF3}" BorderThickness="1"
+                                                        CornerRadius="12" Padding="15" Margin="0,0,0,9">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="66"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                                                        <Grid Width="58" Height="58" VerticalAlignment="Center">
+                                                            <Ellipse Stroke="{DynamicResource ThemeBrush_E8ECF3}" StrokeThickness="6"/>
+                                                            <Ellipse Stroke="{DynamicResource ThemeBrush_5669E8}" StrokeThickness="6"
+                                                                     StrokeDashArray="3,1" RenderTransformOrigin="0.5,0.5">
+                                                                <Ellipse.RenderTransform><RotateTransform Angle="-90"/></Ellipse.RenderTransform>
+                                                            </Ellipse>
+                                                            <TextBlock Text="✓" Foreground="{DynamicResource ThemeBrush_5669E8}"
+                                                                       FontSize="19" FontWeight="Bold" HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center"/>
+                                                        </Grid>
+                                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0,0,0">
+                                                            <TextBlock Text="Selected to clean" Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10.5"/>
+                                                            <TextBlock x:Name="SelectedTempSizeText" Text="0 B" Foreground="{DynamicResource ThemeBrush_25334A}"
+                                                                       FontSize="22" FontWeight="Bold" Margin="0,2,0,0"/>
+                                                            <TextBlock x:Name="SelectedTempCountText" Text="0 files · 0 locations"
+                                                                       Foreground="{DynamicResource ThemeBrush_58667B}" FontSize="10.5"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Border>
+                                                <Border Background="{DynamicResource ThemeBrush_FFFFFF}" BorderBrush="{DynamicResource ThemeBrush_E8ECF3}" BorderThickness="1"
+                                                        CornerRadius="12" Padding="15" Margin="0,0,0,9">
+                                                    <StackPanel>
+                                                        <TextBlock Text="What happens?" Foreground="{DynamicResource ThemeBrush_29364B}" FontSize="13.5" FontWeight="Bold"/>
+                                                        <TextBlock Text="Nova removes only the files selected from this scan. Folders are never removed."
+                                                                   Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="10.5" Margin="0,5,0,0"
+                                                                   TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                </Border>
+                                                <Border Background="{DynamicResource ThemeBrush_FFFFFF}" BorderBrush="{DynamicResource ThemeBrush_E8ECF3}" BorderThickness="1"
+                                                        CornerRadius="12" Padding="15" Margin="0,0,0,9">
+                                                    <StackPanel>
+                                                        <TextBlock Text="✓  Recommended" Foreground="{DynamicResource ThemeBrush_5669E8}" FontSize="12.5" FontWeight="Bold"/>
+                                                        <TextBlock Text="Changed, locked, protected and linked files are skipped. Cache files can be recreated by Windows or apps."
+                                                                   Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="10.5" Margin="0,5,0,0"
+                                                                   TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                </Border>
+                                                <Border Background="{DynamicResource ThemeBrush_FFFFFF}" BorderBrush="{DynamicResource ThemeBrush_E8ECF3}" BorderThickness="1"
+                                                        CornerRadius="12" Padding="15" Margin="0,0,0,9">
+                                                    <StackPanel>
+                                                        <TextBlock Text="Before you continue" Foreground="{DynamicResource ThemeBrush_29364B}" FontSize="12.5" FontWeight="Bold"/>
+                                                        <TextBlock Text="• Save your work first.&#10;• Close browsers to release more cache files.&#10;• Nova asks you to confirm before removing files."
+                                                                   Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="10.5" Margin="0,5,0,0"
+                                                                   TextWrapping="Wrap"/>
+                                                    </StackPanel>
+                                                </Border>
+                                                <Border Background="{DynamicResource ThemeBrush_FFFFFF}" BorderBrush="{DynamicResource ThemeBrush_E8ECF3}" BorderThickness="1"
+                                                        CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                                    <StackPanel>
+                                                        <TextBlock Text="Review selected locations" Foreground="{DynamicResource ThemeBrush_29364B}" FontSize="12.5" FontWeight="Bold"/>
+                                                        <TextBlock x:Name="SelectedTempCategoriesText" Text="No categories selected"
+                                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10.5" Margin="0,5,0,5"/>
+                                                        <ItemsControl ItemsSource="{Binding SelectedCleanupCategories}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Grid Margin="0,3">
+                                                                        <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                                                        <TextBlock Text="{Binding Name}" Foreground="{DynamicResource ThemeBrush_5B6A81}" FontSize="10.5"
+                                                                                   TextTrimming="CharacterEllipsis"/>
+                                                                        <TextBlock Grid.Column="1" Text="{Binding SelectedFormattedBytes}" Foreground="{DynamicResource ThemeBrush_526078}"
+                                                                                   FontSize="10.5" FontWeight="SemiBold"/>
+                                                                    </Grid>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
                                                 </Border>
                                             </StackPanel>
-                                        </Border>
-                                        <Border Background="{DynamicResource ThemeBrush_FFFFFF}" BorderBrush="{DynamicResource ThemeBrush_E8ECF3}" BorderThickness="1"
-                                                CornerRadius="12" Padding="22">
-                                            <StackPanel>
-                                                <TextBlock Text="Review before removal" Foreground="{DynamicResource ThemeBrush_29364B}" FontSize="14" FontWeight="Bold"/>
-                                                <TextBlock x:Name="SelectedTempCategoriesText" Text="No categories selected"
-                                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" Margin="0,10,0,10"/>
-                                                <ItemsControl ItemsSource="{Binding SelectedCleanupCategories}">
-                                                    <ItemsControl.ItemTemplate>
-                                                        <DataTemplate>
-                                                            <Grid Margin="0,7">
-                                                                <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                                                <TextBlock Text="{Binding Name}" Foreground="{DynamicResource ThemeBrush_5B6A81}" FontSize="10"
-                                                                           TextTrimming="CharacterEllipsis"/>
-                                                                <TextBlock Grid.Column="1" Text="{Binding SelectedFormattedBytes}" Foreground="{DynamicResource ThemeBrush_526078}"
-                                                                           FontSize="10" FontWeight="SemiBold"/>
-                                                            </Grid>
-                                                        </DataTemplate>
-                                                    </ItemsControl.ItemTemplate>
-                                                </ItemsControl>
-                                                <Button x:Name="CleanButton" Content="Cleanup files" Background="{DynamicResource ThemeBrush_5669E8}"
-                                                        IsEnabled="False" Margin="0,13,0,0" Click="CleanButton_Click"/>
-                                                <TextBlock x:Name="CleanupStatusText" Text="" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
-                                                           FontSize="10" Margin="0,9,0,0" TextWrapping="Wrap"/>
-                                            </StackPanel>
-                                        </Border>
-                                        <Button x:Name="TempScanButton" Content="Scan for cleanup" Click="ScanButton_Click"
-                                                Margin="0,12,0,0"/>
-                                    </StackPanel>
+                                        </ScrollViewer>
+                                        <StackPanel Grid.Row="1">
+                                        <Button x:Name="CleanButton" Content="Clean Selected Files"
+                                                Background="{DynamicResource ThemeBrush_5669E8}"
+                                                IsEnabled="False" Margin="0,2,0,0" Click="CleanButton_Click"/>
+                                        <Button x:Name="TempScanButton" Content="↻  Scan Again"
+                                                Click="ScanButton_Click" Style="{StaticResource SecondaryButton}"
+                                                Margin="0,7,0,0"/>
+                                        <TextBlock x:Name="CleanupStatusText" Text="" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
+                                                   FontSize="10.5" Margin="0,7,0,0" TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </Grid>
                                 </Grid>
                                 <Grid x:Name="FolderMapPanel" Visibility="Collapsed">
                                     <Grid.RowDefinitions>
@@ -532,9 +994,9 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <StackPanel Grid.Row="0">
-                                        <TextBlock Text="Browse your PC" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="18" FontWeight="Bold"/>
+                                        <TextBlock Text="Browse your PC" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="19" FontWeight="Bold"/>
                                         <TextBlock Text="Read-only folder explorer. Scan lists this location's immediate contents; search looks recursively underneath it. Nothing here can be deleted."
-                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,5,0,10" TextWrapping="Wrap"/>
+                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="13.5" Margin="0,5,0,10" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <DockPanel Grid.Row="1" Margin="0,0,0,10">
                                         <Button x:Name="FolderMapScanButton" DockPanel.Dock="Right" Content="Scan folder" Click="ScanFolderMap_Click"
@@ -584,7 +1046,7 @@
                                         </DataGrid.Columns>
                                     </DataGrid>
                                     <TextBlock x:Name="StorageMapStatusText" Grid.Row="4" Text="Choose a quick location or type a path, then scan. Search is recursive and read-only."
-                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12.5" Margin="0,10,0,0" TextWrapping="Wrap"/>
                                 </Grid>
                                 <Grid x:Name="ShortcutsPanel" Visibility="Collapsed">
                                     <Grid.RowDefinitions>
@@ -594,9 +1056,9 @@
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
                                     <StackPanel Grid.Row="0">
-                                        <TextBlock Text="Games and software shortcuts" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="18" FontWeight="Bold"/>
+                                        <TextBlock Text="Games and software shortcuts" Foreground="{DynamicResource ThemeBrush_202A3B}" FontSize="19" FontWeight="Bold"/>
                                         <TextBlock Text="Choose your shortcuts folder. Nova checks shortcut targets and never moves or deletes shortcuts."
-                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12" Margin="0,5,0,10" TextWrapping="Wrap"/>
+                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="13.5" Margin="0,5,0,10" TextWrapping="Wrap"/>
                                     </StackPanel>
                                     <DockPanel Grid.Row="1" Margin="0,0,0,10">
                                         <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
@@ -625,7 +1087,7 @@
                                         </DataGrid.Columns>
                                     </DataGrid>
                                     <TextBlock x:Name="ShortcutsStatusText" Grid.Row="3" Text="Target status is an observation, not a guarantee that the app is installed or working."
-                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap"/>
+                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12.5" Margin="0,10,0,0" TextWrapping="Wrap"/>
                                 </Grid>
                             </Grid>
                         </Grid>
@@ -633,229 +1095,630 @@
                 </TabItem>
 
                 <TabItem Header="Settings">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="0,10,0,12">
-                            <Border Background="{DynamicResource ThemeBrush_172238}" CornerRadius="14"
-                                    Padding="22" Margin="0,0,0,16">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Text="NOVA PREFERENCES" Foreground="{DynamicResource ThemeBrush_B9C4FF}"
-                                                   FontSize="10" FontWeight="Bold"/>
-                                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                            <TextBlock Text="Make Nova yours" Foreground="White"
-                                                       FontSize="23" FontWeight="Bold" Margin="0,5,10,3"/>
-                                            <Button Content="&lt;/&gt;" Padding="9,5" MinWidth="42"
-                                                    Background="{DynamicResource ThemeBrush_293754}"
-                                                    Foreground="{DynamicResource ThemeBrush_B9C4FF}"
-                                                    BorderBrush="{DynamicResource ThemeBrush_53627A}"
-                                                    ToolTip="Developer mode — intended for the Nova developer only."
-                                                    Click="DeveloperMode_Click"/>
-                                        </StackPanel>
-                                        <TextBlock Text="Personalize how Nova looks and keep track of the latest changes."
-                                                   Foreground="{DynamicResource ThemeBrush_ECF1FA}" FontSize="12"
-                                                   TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                    <Border Grid.Column="1" Width="48" Height="48" CornerRadius="14"
-                                            Background="{DynamicResource ThemeBrush_293754}"
-                                            VerticalAlignment="Center" Margin="16,0,0,0">
-                                        <TextBlock Text="⚙" Foreground="{DynamicResource ThemeBrush_B9C4FF}"
-                                                   FontSize="23" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                    </Border>
-                                </Grid>
-                            </Border>
-
-                            <Border x:Name="DeveloperModePanel" Style="{StaticResource Card}"
-                                    Margin="0,0,0,16" Visibility="Collapsed">
-                                <StackPanel>
-                                    <TextBlock Text="DEVELOPER MODE / ADMIN MODE"
-                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="10" FontWeight="Bold"/>
-                                    <TextBlock Text="Developer notifications" Foreground="{DynamicResource ThemeBrush_202A3B}"
-                                               FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
-                                    <TextBlock Text="This area is for the Nova developer and is not intended for ordinary users. This local test only sends a notification to this PC; Nova does not have infrastructure to broadcast a notification to all installations."
-                                               Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="12"
-                                               Margin="0,7,0,14" TextWrapping="Wrap"/>
-                                    <Button x:Name="DeveloperNotificationTestButton"
-                                            Content="Send test notification to this PC"
-                                            HorizontalAlignment="Left" Click="DeveloperNotificationTest_Click"/>
-                                    <TextBlock x:Name="DeveloperNotificationStatusText"
-                                               Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="11"
-                                               Margin="0,10,0,0" TextWrapping="Wrap"/>
-                                </StackPanel>
-                            </Border>
-
-                            <Border x:Name="LatestReleaseNotesPanel" Style="{StaticResource Card}" Margin="0,0,0,16">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel>
-                                        <TextBlock Text="WHAT'S NEW" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
-                                                   FontSize="10" FontWeight="Bold"/>
-                                        <TextBlock Text="Latest release notes" Foreground="{DynamicResource ThemeBrush_202A3B}"
-                                                   FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
-                                    </StackPanel>
-                                    <Border Grid.Column="1" Background="{DynamicResource ThemeBrush_F0F3F8}"
-                                            CornerRadius="10" Padding="10,5" VerticalAlignment="Center">
-                                        <TextBlock x:Name="LatestReleaseNotesTitleText" Foreground="{DynamicResource ThemeBrush_53627A}"
-                                                   FontSize="11" FontWeight="SemiBold"/>
-                                    </Border>
-                                    <TextBlock x:Name="LatestReleaseNotesStatusText" Grid.Row="1" Grid.ColumnSpan="2"
-                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11"
-                                               Margin="0,8,0,12" TextWrapping="Wrap"/>
-                                    <Border Grid.Row="2" Grid.ColumnSpan="2" Height="1"
-                                            Background="{DynamicResource ThemeBrush_E8ECF3}" Margin="0,0,0,12"/>
-                                    <ScrollViewer Grid.Row="3" Grid.ColumnSpan="2" MaxHeight="180"
-                                                  VerticalScrollBarVisibility="Auto">
-                                        <TextBlock x:Name="LatestReleaseNotesText" Foreground="{DynamicResource ThemeBrush_39465B}"
-                                                   FontSize="12" LineHeight="20" TextWrapping="Wrap"/>
-                                    </ScrollViewer>
-                                </Grid>
-                            </Border>
-
+                    <Grid x:Name="SettingsPage" Margin="0,0,0,2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Style="{StaticResource SettingsCard}"
+                                MinHeight="112" Margin="0,0,0,10" Padding="18,14">
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="1*"/>
-                                    <ColumnDefinition Width="16"/>
-                                    <ColumnDefinition Width="1.25*"/>
+                                    <ColumnDefinition Width="1.6*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-
-                                <Border Grid.Column="0" Style="{StaticResource Card}">
-                                    <StackPanel>
-                                        <TextBlock Text="PERSONALIZATION" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
-                                                   FontSize="10" FontWeight="Bold"/>
-                                        <TextBlock Text="Appearance" Foreground="{DynamicResource ThemeBrush_202A3B}"
-                                                   FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
-                                        <TextBlock Text="Choose the theme that feels right. Nova remembers your choice."
-                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12"
-                                                   Margin="0,6,0,18" TextWrapping="Wrap"/>
-                                        <TextBlock Text="COLOR THEME" Foreground="{DynamicResource ThemeBrush_53627A}"
-                                                   FontSize="10" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                                        <Grid>
-                                            <ComboBox x:Name="AppearanceComboBox" Style="{StaticResource AppearanceComboBox}"
-                                                      Foreground="Transparent">
-                                                <ComboBoxItem Content="Light"/>
-                                                <ComboBoxItem Content="Dark"/>
-                                            </ComboBox>
-                                            <TextBlock x:Name="AppearanceSelectionText" Text="Light"
-                                                       Foreground="{DynamicResource ThemeBrush_202A3B}"
-                                                       Margin="10,0,34,0" VerticalAlignment="Center"
-                                                       IsHitTestVisible="False"/>
-                                        </Grid>
-                                        <TextBlock Text="Applies immediately and is saved for your next session."
-                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11"
-                                                   Margin="0,12,0,0" TextWrapping="Wrap"/>
+                                <Grid Grid.Column="0" VerticalAlignment="Center">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="54"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Border Style="{StaticResource SettingsIconPlate}" Width="54" Height="54" Padding="0">
+                                        <TextBlock Text="⚙" Foreground="{DynamicResource Settings.AccentTextBrush}"
+                                                   FontSize="28" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="Settings" Foreground="{DynamicResource Settings.TextBrush}"
+                                                   FontSize="27" FontWeight="Bold"/>
+                                        <TextBlock Text="Configure Nova to work the way you want. Manage updates, appearance and behaviour."
+                                                   Style="{StaticResource SettingsCaption}" TextWrapping="Wrap"/>
                                     </StackPanel>
+                                </Grid>
+                                <Border Grid.Column="1" Margin="8,0" CornerRadius="16"
+                                        ClipToBounds="True" BorderBrush="#29466E" BorderThickness="1">
+                                    <Viewbox Stretch="UniformToFill">
+                                        <Canvas Width="360" Height="120" Background="{DynamicResource Settings.SunsetSkyBrush}">
+                                            <Ellipse Canvas.Left="191" Canvas.Top="38" Width="42" Height="42"
+                                                     Fill="#FFD0C8" Opacity="0.96"/>
+                                            <Path Data="M0,79 L41,46 82,77 145,19 204,78 254,31 360,82 360,120 0,120 Z"
+                                                  Fill="#303F80"/>
+                                            <Path Data="M0,91 L73,56 117,87 185,53 243,91 303,63 360,91 360,120 0,120 Z"
+                                                  Fill="#1B3268"/>
+                                            <Path Data="M130,120 L192,73 248,120 Z" Fill="#D088B5" Opacity="0.87"/>
+                                            <Path Data="M167,120 L202,82 229,120 Z" Fill="#FFD0CA" Opacity="0.45"/>
+                                            <Path Data="M0,103 L69,91 133,103 202,88 278,104 360,91 360,120 0,120 Z"
+                                                  Fill="#102346" Opacity="0.86"/>
+                                        </Canvas>
+                                    </Viewbox>
                                 </Border>
-
-                                <Border Grid.Column="2" Style="{StaticResource Card}">
-                                    <StackPanel>
-                                        <TextBlock Text="STAY CURRENT" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
-                                                   FontSize="10" FontWeight="Bold"/>
-                                        <TextBlock Text="Application updates" Foreground="{DynamicResource ThemeBrush_202A3B}"
-                                                   FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
-                                        <TextBlock Text="Secure, verified updates delivered as a single Nova EXE."
-                                                   Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12"
-                                                   Margin="0,6,0,14" TextWrapping="Wrap"/>
-                                        <Border Background="{DynamicResource ThemeBrush_F7F8FB}" CornerRadius="9"
-                                                Padding="12" Margin="0,0,0,12">
-                                            <StackPanel>
-                                                <TextBlock Text="INSTALLED VERSION" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
-                                                           FontSize="10" FontWeight="SemiBold"/>
-                                                <TextBlock x:Name="AppVersionText" Foreground="{DynamicResource ThemeBrush_202A3B}"
-                                                           FontSize="15" FontWeight="Bold" Margin="0,3,0,0"/>
-                                            </StackPanel>
-                                        </Border>
-                                        <TextBlock x:Name="AppUpdateStatusText" Text="Check GitHub for the latest Nova release."
-                                                   Foreground="{DynamicResource ThemeBrush_53627A}" FontSize="12"
-                                                   Margin="0,0,0,14" TextWrapping="Wrap"/>
-                                        <ProgressBar x:Name="AppUpdateProgressBar" Minimum="0" Maximum="100" Height="8"
-                                                     Visibility="Collapsed" Margin="0,0,0,6"/>
-                                        <TextBlock x:Name="AppUpdateProgressText" Foreground="{DynamicResource ThemeBrush_53627A}"
-                                                   FontSize="11" Margin="0,0,0,12" TextWrapping="Wrap"
-                                                   Visibility="Collapsed"/>
-                                        <WrapPanel>
-                                            <Button x:Name="CheckAppUpdateButton" Content="Check for updates"
-                                                    Click="CheckAppUpdates_Click" Margin="0,0,8,0"/>
-                                            <Button x:Name="InstallAppUpdateButton" Content="Download and install"
-                                                    Click="InstallAppUpdate_Click" IsEnabled="False"
-                                                    Style="{StaticResource SecondaryButton}"/>
-                                        </WrapPanel>
-                                    </StackPanel>
-                                </Border>
-                            </Grid>
-
-                            <Border Background="{DynamicResource ThemeBrush_F0F3F8}" CornerRadius="9"
-                                    Padding="13" Margin="0,16,0,0">
-                                <TextBlock Text="Nova closes and reopens to finish installing an update. Temporary install files are cleaned up automatically."
-                                           Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11"
-                                           TextWrapping="Wrap"/>
-                            </Border>
-
-                            <Border Style="{StaticResource Card}" Margin="0,16,0,0">
-                                <StackPanel>
-                                    <TextBlock Text="FEEDBACK &amp; SUPPORT" Foreground="{DynamicResource ThemeBrush_7F8BA0}"
-                                               FontSize="10" FontWeight="Bold"/>
-                                    <TextBlock Text="Help improve Nova" Foreground="{DynamicResource ThemeBrush_202A3B}"
-                                               FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
-                                    <TextBlock Text="Send feedback directly to the Nova Manager GitHub repository. The first submission requires one-time GitHub authorization; later submissions are sent from Nova."
-                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="12"
-                                               Margin="0,6,0,14" TextWrapping="Wrap"/>
+                                <Border Grid.Column="2" Style="{StaticResource SettingsInset}"
+                                        MinWidth="166" Margin="12,0,0,0" Padding="12,10" VerticalAlignment="Center">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="16"/>
+                                            <ColumnDefinition Width="25"/>
                                             <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0">
-                                            <TextBlock Text="SUGGEST A FEATURE" Foreground="{DynamicResource ThemeBrush_53627A}"
-                                                       FontSize="10" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                                            <TextBox x:Name="FeatureSuggestionTextBox" MinHeight="100" MaxLength="5000"
-                                                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                                                     VerticalContentAlignment="Top" Padding="10,8" Margin="0,0,0,10"
-                                                     Background="{DynamicResource ThemeBrush_F7F8FB}"
-                                                     Foreground="{DynamicResource ThemeBrush_202A3B}"
-                                                     BorderBrush="{DynamicResource ThemeBrush_E8ECF3}"
-                                                     ToolTip="Describe the feature or improvement you'd like"/>
-                                            <Button x:Name="FeatureSuggestionButton" Content="Send suggestion" Click="SendFeatureSuggestion_Click"
-                                                    HorizontalAlignment="Left"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2">
-                                            <TextBlock Text="REPORT A BUG" Foreground="{DynamicResource ThemeBrush_53627A}"
-                                                       FontSize="10" FontWeight="SemiBold" Margin="0,0,0,6"/>
-                                            <TextBox x:Name="BugReportTextBox" MinHeight="100" MaxLength="5000"
-                                                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                                                     VerticalContentAlignment="Top" Padding="10,8" Margin="0,0,0,10"
-                                                     Background="{DynamicResource ThemeBrush_F7F8FB}"
-                                                     Foreground="{DynamicResource ThemeBrush_202A3B}"
-                                                     BorderBrush="{DynamicResource ThemeBrush_E8ECF3}"
-                                                     ToolTip="Describe what happened and what you expected"/>
-                                            <Button x:Name="BugReportButton" Content="Send bug report" Click="SendBugReport_Click"
-                                                    HorizontalAlignment="Left"/>
+                                        <TextBlock Text="▣" Foreground="{DynamicResource Settings.AccentTextBrush}"
+                                                   FontSize="18" VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock Text="App version" Style="{StaticResource SettingsCaption}"/>
+                                            <TextBlock x:Name="SettingsVersionText" Text="Nova Manager"
+                                                       Foreground="{DynamicResource Settings.TextBrush}"
+                                                       FontSize="14" FontWeight="Bold"
+                                                       TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Grid>
-                                    <TextBlock Text="Please don't include passwords, access tokens, or other sensitive information. Bug reports include only the Nova and Windows versions."
-                                               Foreground="{DynamicResource ThemeBrush_7F8BA0}" FontSize="11"
-                                               Margin="0,12,0,0" TextWrapping="Wrap"/>
-                                    <TextBlock x:Name="FeedbackStatusText" Foreground="{DynamicResource ThemeBrush_53627A}"
-                                               FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap"/>
-                                </StackPanel>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled"
+                                      Loaded="SettingsCardsScrollViewer_Loaded">
+                        <Grid Margin="0,2,0,4" VerticalAlignment="Stretch" MinHeight="540">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                                <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource SettingsCard}"
+                                        Margin="0,0,4,4" Padding="10">
+                                    <Grid VerticalAlignment="Stretch">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="44"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Style="{StaticResource SettingsPurpleIconPlate}" Width="40" Height="40" Padding="0">
+                                                <TextBlock Text="◐" Foreground="{DynamicResource Settings.PurpleAccentBrush}"
+                                                           FontSize="21" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                <TextBlock Text="Appearance" Style="{StaticResource SettingsHeading}"/>
+                                                <TextBlock Text="Choose Nova's theme." Style="{StaticResource SettingsCaption}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Grid Grid.Row="1" Margin="0,16,0,0" VerticalAlignment="Center">
+                                            <StackPanel>
+                                                <TextBlock Text="Color theme" FontSize="14" FontWeight="Bold"
+                                                           Foreground="{DynamicResource Settings.TextBrush}" Margin="0,0,0,7"/>
+                                                <ComboBox x:Name="AppearanceComboBox" Style="{StaticResource AppearanceComboBox}"
+                                                          Height="48" FontSize="14" FontWeight="SemiBold"
+                                                          VerticalContentAlignment="Center"
+                                                          SelectionChanged="AppearanceComboBox_SelectionChanged">
+                                                    <ComboBoxItem Content="Light"/>
+                                                    <ComboBoxItem Content="Dark"/>
+                                                </ComboBox>
+                                                <TextBlock Text="Applies immediately and is saved for your next session."
+                                                           Style="{StaticResource SettingsCaption}" Margin="0,9,0,0"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+
+                                <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource SettingsCard}"
+                                        Margin="2,0,2,4" Padding="10">
+                                    <Grid VerticalAlignment="Stretch">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="44"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Style="{StaticResource SettingsCyanIconPlate}" Width="40" Height="40" Padding="0">
+                                                <TextBlock Text="☷" Foreground="{DynamicResource Settings.CyanAccentBrush}"
+                                                           FontSize="21" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                <TextBlock Text="Behaviour" Style="{StaticResource SettingsHeading}"/>
+                                                <TextBlock Text="How Nova works and behaves." Style="{StaticResource SettingsCaption}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Grid Grid.Row="1" Margin="0,10,0,0">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="*"/>
+                                            </Grid.RowDefinitions>
+                                            <Border Grid.Row="0" Style="{StaticResource SettingsInset}" Padding="10,7" Margin="0,0,0,6">
+                                                <Grid MinHeight="48">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="28"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="44"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="⇲" Foreground="{DynamicResource Settings.AccentTextBrush}"
+                                                               FontSize="19" VerticalAlignment="Center"/>
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="Minimise to system tray" FontSize="13"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource Settings.TextBrush}"/>
+                                                        <TextBlock Text="Keep Nova running in the background."
+                                                                   Style="{StaticResource SettingsCaption}" FontSize="12"/>
+                                                    </StackPanel>
+                                                    <CheckBox x:Name="MinimizeToTrayToggle" Grid.Column="2"
+                                                              Style="{StaticResource SettingsToggle}" Tag="MinimizeToTray"
+                                                              Click="BehaviourSetting_Click"/>
+                                                </Grid>
+                                            </Border>
+                                            <Border Grid.Row="1" Style="{StaticResource SettingsInset}" Padding="10,7" Margin="0,0,0,6">
+                                                <Grid MinHeight="48">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="28"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="44"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="◷" Foreground="{DynamicResource Settings.AccentTextBrush}"
+                                                               FontSize="19" VerticalAlignment="Center"/>
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="Start with Windows" FontSize="13"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource Settings.TextBrush}"/>
+                                                        <TextBlock Text="Launch Nova when Windows starts."
+                                                                   Style="{StaticResource SettingsCaption}" FontSize="12"/>
+                                                    </StackPanel>
+                                                    <CheckBox x:Name="StartWithWindowsToggle" Grid.Column="2"
+                                                              Style="{StaticResource SettingsToggle}" Tag="StartWithWindows"
+                                                              Click="BehaviourSetting_Click"/>
+                                                </Grid>
+                                            </Border>
+                                            <Border Grid.Row="2" Style="{StaticResource SettingsInset}" Padding="10,7">
+                                                <Grid MinHeight="48">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="28"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="44"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="♧" Foreground="{DynamicResource Settings.AccentTextBrush}"
+                                                               FontSize="19" VerticalAlignment="Center"/>
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock Text="Show startup notification" FontSize="13"
+                                                                   FontWeight="SemiBold"
+                                                                   Foreground="{DynamicResource Settings.TextBrush}"/>
+                                                        <TextBlock Text="Display a notification when Nova starts."
+                                                                   Style="{StaticResource SettingsCaption}" FontSize="12"/>
+                                                    </StackPanel>
+                                                    <CheckBox x:Name="StartupNotificationToggle" Grid.Column="2"
+                                                              Style="{StaticResource SettingsToggle}" Tag="StartupNotification"
+                                                              Click="BehaviourSetting_Click"/>
+                                                </Grid>
+                                            </Border>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+
+                                <Border Grid.Row="0" Grid.Column="2" Style="{StaticResource SettingsCard}"
+                                        Margin="2,0,0,4" Padding="10">
+                                    <Grid VerticalAlignment="Stretch">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="44"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Style="{StaticResource SettingsIconPlate}" Width="40" Height="40" Padding="0">
+                                                <TextBlock Text="⟳" Foreground="{DynamicResource Settings.AccentTextBrush}"
+                                                           FontSize="21" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                <TextBlock Text="Update" Style="{StaticResource SettingsHeading}"/>
+                                                <TextBlock Text="Check Nova and view its change log." Style="{StaticResource SettingsCaption}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Grid Grid.Row="1" Margin="0,10,0,0">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="Auto"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <Border Grid.Row="0" Style="{StaticResource SettingsInset}"
+                                                    MinHeight="48" Padding="10,6">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="26"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Ellipse Width="13" Height="13" Fill="#27CFA7"
+                                                             VerticalAlignment="Center"/>
+                                                    <TextBlock x:Name="AppUpdateStatusText"
+                                                               Grid.Column="1"
+                                                               Text="Check GitHub for the latest Nova release."
+                                                               Style="{StaticResource SettingsCaption}"
+                                                               FontSize="12.5" FontWeight="SemiBold"
+                                                               VerticalAlignment="Center"
+                                                               TextWrapping="Wrap"/>
+                                                </Grid>
+                                            </Border>
+                                            <Button x:Name="CheckAppUpdateButton" Grid.Row="1"
+                                                    Content="↓  Check for updates  ›"
+                                                    Style="{StaticResource SettingsAccentButton}"
+                                                    Click="CheckAppUpdates_Click" HorizontalContentAlignment="Center"
+                                                    Padding="10,8" MinHeight="48" Margin="0,6,0,6"/>
+                                            <Grid Grid.Row="2" Margin="0,0,0,6" MinHeight="54">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="6"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Button x:Name="InstallAppUpdateButton" Grid.Column="0"
+                                                        Style="{StaticResource SettingsSecondaryButton}"
+                                                        Click="InstallAppUpdate_Click" IsEnabled="False"
+                                                        HorizontalContentAlignment="Center" MinHeight="54"
+                                                        Padding="6,4">
+                                                    <StackPanel Orientation="Vertical"
+                                                                HorizontalAlignment="Center"
+                                                                VerticalAlignment="Center">
+                                                        <TextBlock Text="↓" FontSize="20"
+                                                                   HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center"/>
+                                                        <StackPanel HorizontalAlignment="Center">
+                                                            <TextBlock Text="Install update" FontSize="12"
+                                                                       FontWeight="Bold" TextAlignment="Center"/>
+                                                            <TextBlock Text="Download &amp; install" FontSize="10.5"
+                                                                       Style="{StaticResource SettingsCaption}"
+                                                                       TextAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </Button>
+                                                <Button x:Name="ChangeLogButton" Grid.Column="2"
+                                                        Style="{StaticResource SettingsSecondaryButton}"
+                                                        Click="OpenChangeLog_Click"
+                                                        HorizontalContentAlignment="Center" MinHeight="54"
+                                                        Padding="6,4">
+                                                    <StackPanel Orientation="Vertical"
+                                                                HorizontalAlignment="Center"
+                                                                VerticalAlignment="Center">
+                                                        <TextBlock Text="☷" FontSize="18"
+                                                                   HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center"/>
+                                                        <StackPanel HorizontalAlignment="Center">
+                                                            <TextBlock Text="Release notes" FontSize="12"
+                                                                       FontWeight="Bold" TextAlignment="Center"/>
+                                                            <TextBlock Text="See what's new" FontSize="10.5"
+                                                                       Style="{StaticResource SettingsCaption}"
+                                                                       TextAlignment="Center"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                </Button>
+                                            </Grid>
+                                            <StackPanel Grid.Row="3">
+                                                <ProgressBar x:Name="AppUpdateProgressBar" Minimum="0" Maximum="100"
+                                                             Height="8" Visibility="Collapsed" Margin="0,0,0,5"/>
+                                                <TextBlock x:Name="AppUpdateProgressText"
+                                                           Style="{StaticResource SettingsCaption}"
+                                                           Visibility="Collapsed"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+
+                                <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource SettingsCard}"
+                                        Margin="0,2,4,0" Padding="10">
+                                    <Grid VerticalAlignment="Stretch">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="44"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Style="{StaticResource SettingsPurpleIconPlate}" Width="40" Height="40" Padding="0">
+                                                <TextBlock Text="&lt;/&gt;" Foreground="{DynamicResource Settings.PurpleAccentBrush}"
+                                                           FontSize="15" FontWeight="Bold" HorizontalAlignment="Center"
+                                                           VerticalAlignment="Center"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                <TextBlock Text="Developer Mode" Style="{StaticResource SettingsHeading}"/>
+                                                <TextBlock Text="Developer features and testing." Style="{StaticResource SettingsCaption}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <StackPanel Grid.Row="1" Margin="0,7,0,0">
+                                            <Border Style="{StaticResource SettingsInset}" Padding="10">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="26"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="38"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="♙" Foreground="{DynamicResource Settings.AccentTextBrush}"
+                                                               FontSize="19" VerticalAlignment="Center"/>
+                                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                        <TextBlock x:Name="DeveloperModeStatusText" Text="Developer Mode is disabled"
+                                                                   FontSize="13" FontWeight="Bold"
+                                                                   Foreground="{DynamicResource Settings.TextBrush}"/>
+                                                        <TextBlock Text="Enable developer mode for advanced features."
+                                                                   Style="{StaticResource SettingsCaption}" FontSize="12"/>
+                                                    </StackPanel>
+                                                    <CheckBox x:Name="DeveloperModeToggle" Grid.Column="2"
+                                                              Style="{StaticResource SettingsToggle}"
+                                                              Click="DeveloperMode_Click"
+                                                              ToolTip="Requires the private developer password."/>
+                                                </Grid>
+                                            </Border>
+                                            <StackPanel x:Name="DeveloperToolsPanel" Visibility="Collapsed" Margin="0,5,0,0">
+                                                <TextBlock Text="Developer notifications ☺" FontSize="13"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{DynamicResource Settings.MutedTextBrush}"
+                                                           Margin="1,0,0,3"/>
+                                                <Button x:Name="DeveloperNotificationTestButton"
+                                                        Content="Send test notification to this PC"
+                                                        Style="{StaticResource SettingsAccentButton}"
+                                                        HorizontalAlignment="Stretch"
+                                                        MinHeight="50"
+                                                        Click="DeveloperNotificationTest_Click"/>
+                                                <TextBlock x:Name="DeveloperNotificationStatusText"
+                                                           Style="{StaticResource SettingsCaption}"
+                                                           Margin="0,3,0,0"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+
+                                <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource SettingsCard}"
+                                        Margin="2,2,2,0" Padding="10">
+                                    <Grid VerticalAlignment="Stretch">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="44"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Style="{StaticResource SettingsCyanIconPlate}" Width="40" Height="40" Padding="0">
+                                                <TextBlock Text="▣" Foreground="{DynamicResource Settings.CyanAccentBrush}"
+                                                           FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                <TextBlock Text="Feedback &amp; Support" Style="{StaticResource SettingsHeading}"/>
+                                                <TextBlock Text="Help improve Nova or report an issue."
+                                                           Style="{StaticResource SettingsCaption}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Grid Grid.Row="1" Margin="0,12,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="6"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Button Grid.Column="0" Style="{StaticResource SettingsSecondaryButton}"
+                                                Click="SuggestFeature_Click" HorizontalContentAlignment="Stretch"
+                                                MinHeight="150" Padding="12,14">
+                                                <Grid>
+                                                    <StackPanel HorizontalAlignment="Center"
+                                                                VerticalAlignment="Center">
+                                                        <Border Style="{StaticResource SettingsAmberIconPlate}"
+                                                                Width="54" Height="54" Padding="0"
+                                                                HorizontalAlignment="Center">
+                                                            <TextBlock Text="☼"
+                                                                       Foreground="{DynamicResource Settings.AmberAccentBrush}"
+                                                                       FontSize="27" HorizontalAlignment="Center"
+                                                                       VerticalAlignment="Center"/>
+                                                        </Border>
+                                                        <TextBlock Text="Suggest a feature" FontSize="14"
+                                                                   FontWeight="Bold" TextWrapping="Wrap"
+                                                                   TextAlignment="Center" Margin="0,12,0,2"/>
+                                                        <TextBlock Text="Share an idea to make Nova even better."
+                                                                   Style="{StaticResource SettingsCaption}"
+                                                                   FontSize="12" TextWrapping="Wrap"
+                                                                   TextAlignment="Center" MaxWidth="190"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Button>
+                                            <Button Grid.Column="2" Style="{StaticResource SettingsSecondaryButton}"
+                                                Click="ReportBug_Click" HorizontalContentAlignment="Stretch"
+                                                MinHeight="150" Padding="12,14">
+                                            <Grid>
+                                                <StackPanel HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center">
+                                                    <Border Style="{StaticResource SettingsRoseIconPlate}"
+                                                            Width="54" Height="54" Padding="0"
+                                                            HorizontalAlignment="Center">
+                                                        <TextBlock Text="⚒"
+                                                                   Foreground="{DynamicResource Settings.RoseAccentBrush}"
+                                                                   FontSize="25" HorizontalAlignment="Center"
+                                                                   VerticalAlignment="Center"/>
+                                                    </Border>
+                                                    <TextBlock Text="Report a bug" FontSize="14"
+                                                               FontWeight="Bold" TextWrapping="Wrap"
+                                                               TextAlignment="Center" Margin="0,12,0,2"/>
+                                                    <TextBlock Text="Tell us what happened so we can fix it."
+                                                               Style="{StaticResource SettingsCaption}"
+                                                               FontSize="12" TextWrapping="Wrap"
+                                                               TextAlignment="Center" MaxWidth="190"/>
+                                                </StackPanel>
+                                            </Grid>
+                                            </Button>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+
+                                <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource SettingsCard}"
+                                        Margin="2,2,0,0" Padding="10">
+                                    <Grid VerticalAlignment="Stretch">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="*"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="44"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <Border Style="{StaticResource SettingsGreenIconPlate}" Width="40" Height="40" Padding="0">
+                                                <TextBlock Text="ⓘ" Foreground="{DynamicResource Settings.GreenAccentBrush}"
+                                                           FontSize="21" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                            <StackPanel Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                                <TextBlock Text="About Nova" Style="{StaticResource SettingsHeading}"/>
+                                                <TextBlock Text="App and system information." Style="{StaticResource SettingsCaption}"/>
+                                            </StackPanel>
+                                        </Grid>
+                                        <Grid Grid.Row="1" Margin="0,7,0,0">
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="*"/>
+                                                <RowDefinition Height="Auto"/>
+                                            </Grid.RowDefinitions>
+                                            <Border Grid.Row="0" Style="{StaticResource SettingsInset}" MinHeight="36"
+                                                    Padding="10,4" Margin="0,0,0,5">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="24"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="1.2*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="▣" Foreground="{DynamicResource Settings.AccentTextBrush}"
+                                                               FontSize="15" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="Installed version"
+                                                               Style="{StaticResource SettingsCaption}" FontSize="12.5"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBlock x:Name="AboutVersionText" Grid.Column="2" Text="Nova Manager"
+                                                               FontSize="12.5" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource Settings.TextBrush}"
+                                                               TextAlignment="Right" TextTrimming="CharacterEllipsis"
+                                                               VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                            <Border Grid.Row="1" Style="{StaticResource SettingsInset}" MinHeight="36"
+                                                    Padding="10,4" Margin="0,0,0,5">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="24"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="1.2*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="⌕" Foreground="{DynamicResource Settings.AccentTextBrush}"
+                                                               FontSize="15" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="Last update check"
+                                                               Style="{StaticResource SettingsCaption}" FontSize="12.5"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBlock x:Name="AboutLastUpdateCheckText" Grid.Column="2" Text="Not checked yet"
+                                                               FontSize="12.5" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource Settings.TextBrush}"
+                                                               TextAlignment="Right" TextTrimming="CharacterEllipsis"
+                                                               VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                            <Border Grid.Row="2" Style="{StaticResource SettingsInset}" MinHeight="36"
+                                                    Padding="10,4">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="24"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="1.2*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="▦" Foreground="{DynamicResource Settings.AccentTextBrush}"
+                                                               FontSize="15" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="Operating system"
+                                                               Style="{StaticResource SettingsCaption}" FontSize="12.5"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBlock x:Name="AboutSystemText" Grid.Column="2" Text="Unavailable"
+                                                               FontSize="12.5" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource Settings.TextBrush}"
+                                                               TextAlignment="Right" TextTrimming="CharacterEllipsis"
+                                                               VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                            <Border Grid.Row="3" Style="{StaticResource SettingsInset}" MinHeight="36"
+                                                    Padding="10,4" Margin="0,0,0,5">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="24"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="1.2*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="▤" Foreground="{DynamicResource Settings.AccentTextBrush}"
+                                                               FontSize="15" VerticalAlignment="Center"/>
+                                                    <TextBlock Grid.Column="1" Text="App architecture"
+                                                               Style="{StaticResource SettingsCaption}" FontSize="12.5"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBlock x:Name="AboutArchitectureText" Grid.Column="2" Text="64-bit"
+                                                               FontSize="12.5" FontWeight="SemiBold"
+                                                               Foreground="{DynamicResource Settings.TextBrush}"
+                                                               TextAlignment="Right" VerticalAlignment="Center"/>
+                                                </Grid>
+                                            </Border>
+                                            <Grid Grid.Row="4" Margin="2,5,2,0">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="Nova Manager · Faster, cleaner, smarter"
+                                                           Style="{StaticResource SettingsCaption}" FontSize="10.5"
+                                                           VerticalAlignment="Center"/>
+                                                <Button Grid.Column="1" Content="View release details  ›"
+                                                        Style="{StaticResource SettingsSecondaryButton}"
+                                                        Click="OpenChangeLog_Click" Padding="8,5"
+                                                        MinHeight="30" FontSize="10.5"/>
+                                            </Grid>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+                        </ScrollViewer>
+
+                            <Border Grid.Row="2" Style="{StaticResource SettingsCard}" MinHeight="58"
+                                    Margin="0,8,0,0" Padding="16,10">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="48"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="🚀" Foreground="{DynamicResource Settings.AccentTextBrush}"
+                                               FontSize="32" VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="Nova — Faster • Cleaner • Smarter"
+                                                   FontSize="15" FontWeight="Bold"
+                                                   Foreground="{DynamicResource Settings.TextBrush}"/>
+                                        <TextBlock Text="Keep your system in top shape and get the most out of your PC."
+                                                   Style="{StaticResource SettingsCaption}" FontSize="12"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Right">
+                                        <TextBlock Text="NOVA" Foreground="{DynamicResource Settings.AccentTextBrush}"
+                                                   FontSize="15" FontWeight="Bold"/>
+                                        <TextBlock Text="SOFTWARE MANAGER" Style="{StaticResource SettingsCaption}"
+                                                   FontSize="11.5" HorizontalAlignment="Right"/>
+                                    </StackPanel>
+                                </Grid>
                             </Border>
-                        </StackPanel>
-                    </ScrollViewer>
+                    </Grid>
                 </TabItem>
             </TabControl>
-            <TextBlock x:Name="StatusText" Grid.Row="2" Text="Ready" Foreground="{DynamicResource ThemeBrush_98A3B4}" FontSize="11"
+            <TextBlock x:Name="StatusText" Grid.Row="2" Text="Ready" Foreground="{DynamicResource ThemeBrush_98A3B4}" FontSize="12.5"
                        Margin="2,12,0,0"/>
         </Grid>
     </Grid>

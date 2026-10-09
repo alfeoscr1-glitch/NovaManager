@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -19,6 +20,12 @@ internal sealed record AppUpdateRelease(
     string Sha256);
 
 internal sealed record AppReleaseNotes(Version Version, string Tag, string ReleaseName, string Notes);
+internal sealed record AppReleaseHistoryEntry(
+    Version Version,
+    string ReleaseName,
+    string ReleaseType,
+    DateTimeOffset? PublishedAt,
+    string Notes);
 internal sealed record AppUpdateDownloadProgress(
     long BytesReceived,
     long? TotalBytes,
@@ -129,6 +136,67 @@ internal static class AppUpdateService
         var releaseName = release.GetProperty("name").GetString() ?? $"Nova Manager {tag}";
         var notes = GetReleaseNotes(release.GetProperty("body").GetString(), version);
         return new AppReleaseNotes(version, tag, releaseName, notes);
+    }
+
+    public static async Task<IReadOnlyList<AppReleaseHistoryEntry>> GetReleaseHistoryAsync(
+        CancellationToken cancellationToken)
+    {
+        using var document = await GetGitHubJsonAsync(ReleasesApiUrl, "release-list", false, cancellationToken);
+        if (document.RootElement.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidDataException("GitHub returned an invalid release list.");
+        }
+
+        var releases = new List<AppReleaseHistoryEntry>();
+        foreach (var release in document.RootElement.EnumerateArray())
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (release.TryGetProperty("draft", out var draft) && draft.GetBoolean() ||
+                release.TryGetProperty("prerelease", out var prerelease) && prerelease.GetBoolean() ||
+                !release.TryGetProperty("tag_name", out var tagElement))
+            {
+                continue;
+            }
+
+            var tag = tagElement.GetString();
+            if (string.IsNullOrWhiteSpace(tag))
+            {
+                continue;
+            }
+
+            Version version;
+            try
+            {
+                version = ParseReleaseVersion(tag);
+            }
+            catch (InvalidDataException)
+            {
+                continue;
+            }
+
+            var releaseName = release.TryGetProperty("name", out var nameElement)
+                ? nameElement.GetString() ?? $"Nova Manager {tag}"
+                : $"Nova Manager {tag}";
+            var notes = release.TryGetProperty("body", out var bodyElement)
+                ? GetReleaseNotes(bodyElement.GetString(), version)
+                : GetReleaseNotes(null, version);
+            var publishedAt = release.TryGetProperty("published_at", out var publishedElement) &&
+                              publishedElement.ValueKind == JsonValueKind.String &&
+                              DateTimeOffset.TryParse(
+                                  publishedElement.GetString(),
+                                  CultureInfo.InvariantCulture,
+                                  DateTimeStyles.AssumeUniversal,
+                                  out var parsedPublishedAt)
+                ? parsedPublishedAt
+                : (DateTimeOffset?)null;
+            var releaseType = GetReleaseType(releaseName, version);
+            releases.Add(new AppReleaseHistoryEntry(version, releaseName, releaseType, publishedAt, notes));
+        }
+
+        return releases
+            .OrderByDescending(release => release.Version)
+            .ThenByDescending(release => release.PublishedAt)
+            .ToArray();
     }
 
     public static async Task<int> GetMissedReleaseCountAsync(CancellationToken cancellationToken, bool forceRefresh = false)
@@ -382,6 +450,100 @@ internal static class AppUpdateService
 
         throw new InvalidDataException($"The application does not contain bundled changelog notes for version {version}.");
     }
+
+    public static IReadOnlyList<AppReleaseHistoryEntry> GetBundledReleaseHistory()
+    {
+        using var stream = typeof(AppUpdateService).Assembly.GetManifestResourceStream("NovaManager.CHANGELOG.md")
+            ?? throw new InvalidOperationException("The bundled Nova changelog is missing from the application.");
+        using var reader = new StreamReader(stream);
+        var changelog = reader.ReadToEnd();
+        var headingPattern = new Regex(
+            @"^##\s+(?<version>\d+\.\d+\.\d+)\s+[—-]\s+(?<type>.+?)\s*$",
+            RegexOptions.Multiline | RegexOptions.CultureInvariant);
+        var headings = headingPattern.Matches(changelog);
+        var releases = new List<AppReleaseHistoryEntry>();
+        for (var index = 0; index < headings.Count; index++)
+        {
+            var heading = headings[index];
+            if (!Version.TryParse(heading.Groups["version"].Value, out var version))
+            {
+                continue;
+            }
+
+            var notesStart = heading.Index + heading.Length;
+            var notesEnd = index + 1 < headings.Count ? headings[index + 1].Index : changelog.Length;
+            var notes = changelog[notesStart..notesEnd].Trim();
+            var releaseType = heading.Groups["type"].Value.Trim();
+            releases.Add(new AppReleaseHistoryEntry(
+                version,
+                $"Nova Manager {version}",
+                releaseType,
+                ParseReleaseDate(releaseType),
+                notes));
+        }
+
+        return releases;
+    }
+
+    private static DateTimeOffset? ParseReleaseDate(string releaseType)
+    {
+        var match = Regex.Match(
+            releaseType,
+            @"(?<date>\d{4}-\d{2}-\d{2}|\d{1,2}/\d{1,2}/\d{4})",
+            RegexOptions.CultureInvariant);
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        return DateTimeOffset.TryParse(
+            match.Groups["date"].Value,
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal,
+            out var date)
+            ? date
+            : null;
+    }
+
+    private static string GetReleaseType(string releaseName, Version version)
+    {
+        var explicitType = Regex.Match(
+            releaseName,
+            @"\((?<type>hotfix|developer release|feature release|new version)\)",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        if (explicitType.Success)
+        {
+            return NormalizeReleaseType(explicitType.Groups["type"].Value);
+        }
+
+        try
+        {
+            var bundled = GetBundledReleaseNotes(version);
+            var headingType = Regex.Match(
+                bundled.ReleaseName,
+                @"\((?<type>[^)]+)\)",
+                RegexOptions.CultureInvariant);
+            if (headingType.Success)
+            {
+                return NormalizeReleaseType(headingType.Groups["type"].Value);
+            }
+        }
+        catch (InvalidDataException)
+        {
+        }
+
+        return "New version";
+    }
+
+    private static string NormalizeReleaseType(string type) =>
+        type.Trim().ToLowerInvariant() switch
+        {
+            "hotfix" => "Hotfix",
+            "developer release" => "Developer release",
+            "feature release" => "Feature release",
+            "new version" => "New version",
+            _ => type.Trim()
+        };
 
     private static Version ParseReleaseVersion(string tag)
     {
@@ -701,7 +863,6 @@ internal static class AppUpdateInstaller
                 bundledNotes.ReleaseName,
                 AppUpdateService.CurrentVersion.ToString(3),
                 bundledNotes.Notes);
-            await mainWindow.RefreshLatestReleaseNotesAsync();
         }
 
         File.Delete(configPath);

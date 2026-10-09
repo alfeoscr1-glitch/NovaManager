@@ -1,5 +1,22 @@
 # Nova Manager changelog
 
+## 1.2.5 — Feature release
+
+- Replaced the Overview page with a Dashboard, using a left-side navigation rail, a compact welcome and scan panel, and live-data summary cards for installed apps, available winget updates, and scanned temporary files.
+- Added live CPU, GPU, RAM, and VRAM usage with a rolling in-session graph and 1H, 6H, and 24H ranges. Monitoring runs only while the Dashboard is selected, samples on a background loop, and keeps chart redraws and history sampling bounded.
+- Added PC specification, Windows, boot-time, graphics-driver, and detected local-drive details. CPU usage uses Windows performance counters, memory uses the native Windows API, and NVIDIA telemetry uses NVML when available with Windows GPU performance counters as the utilization fallback.
+- Redesigned Settings as a compact six-card layout with a release-aware version summary, an in-app multi-release change log, and direct links to Nova feedback forms.
+- Overhauled the Settings presentation with dark glass-effect cards, neon-blue borders, colorful icon plates, and a responsive sunset-art header while retaining the three-column layout and minimum window constraints.
+- Enlarged and strengthened Settings typography, controls, card insets, and action tiles; expanded the update card and simplified the appearance card while keeping the compact Developer version badge readable at different window sizes.
+- Refined the Settings cards to use the available layout height more consistently, expanded update and support actions, added architecture details, and replaced the raster header with crisp vector artwork.
+- Refreshed the full application experience with larger, clearer type, consistent rounded surfaces and controls, more comfortable spacing, and a dark visual theme by default for new installations; existing saved Light or Dark preferences are preserved.
+- Reworked the shared application controls, including accessible keyboard-focus states, consistent rounded buttons and fields, and roomier data tables across software, updates, and storage.
+- Tuned the dark palette toward layered navy surfaces and improved cleanup selection contrast, while keeping each settings card balanced as the window grows.
+- Added persisted behaviour preferences for minimizing to the system tray, starting with Windows, and showing a startup notification; retained the existing update workflow, theme selection, and password-gated Developer Mode.
+
+- Redesigned the Temporary Files cleanup panel to follow the supplied two-column layout, with a compact selectable category list, a selected-size summary, safety guidance, and clearer cleanup/scan actions.
+- Added a master checkbox to select or clear all scanned cleanup files while preserving individual file review and the existing confirmation and safe-delete checks.
+
 ## 1.2.3 — Hotfix
 
 - Automatic GitHub release checks now run every 10 minutes while Nova is open and through the existing scheduled task while it is closed. Only automatic checks trigger the Windows update notification; manual checks continue to report update availability without sending that notification.
