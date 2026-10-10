@@ -1,5 +1,9 @@
 # Nova Manager changelog
 
+## 1.2.6 — Hotfix
+
+- Microsoft Edge updates now open Edge's built-in update checker instead of invoking the failing WinGet installer. Nova does not close Edge or install updates silently.
+
 ## 1.2.5 — Feature release
 
 - Replaced the Overview page with a Dashboard, using a left-side navigation rail, a compact welcome and scan panel, and live-data summary cards for installed apps, available winget updates, and scanned temporary files.

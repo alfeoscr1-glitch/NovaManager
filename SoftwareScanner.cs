@@ -182,6 +182,14 @@ internal static class SoftwareScanner
         return process.ExitCode;
     }
 
+    public static void OpenMicrosoftEdgeUpdatePage()
+    {
+        using var process = Process.Start(new ProcessStartInfo("microsoft-edge:edge://settings/help")
+        {
+            UseShellExecute = true
+        }) ?? throw new InvalidOperationException("Microsoft Edge could not be opened.");
+    }
+
     private static IReadOnlyList<UpdateCandidate> ParseUpgradeTable(string output, string source)
     {
         var lines = output.Replace("\uFEFF", string.Empty, StringComparison.Ordinal)

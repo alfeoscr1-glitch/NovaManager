@@ -1201,12 +1201,34 @@ public partial class MainWindow : Window
             return;
         }
 
+        var isEdgeUpdate = update.Source == "winget" &&
+                           update.Id.Equals("Microsoft.Edge", StringComparison.OrdinalIgnoreCase);
         var answer = MessageBox.Show(this,
-            $"Start the winget update for {update.Name} ({update.CurrentVersion} → {update.AvailableVersion})?{Environment.NewLine}{Environment.NewLine}" +
-            "The installer may ask questions or request administrator permission. No silent install is requested.",
-            "Confirm update", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            isEdgeUpdate
+                ? $"Open Microsoft Edge's built-in update checker?{Environment.NewLine}{Environment.NewLine}" +
+                  "Edge will check for and install updates on its About page. Nova will not close Edge or install the update silently."
+                : $"Start the winget update for {update.Name} ({update.CurrentVersion} → {update.AvailableVersion})?{Environment.NewLine}{Environment.NewLine}" +
+                  "The installer may ask questions or request administrator permission. No silent install is requested.",
+            isEdgeUpdate ? "Update Microsoft Edge" : "Confirm update",
+            MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (answer != MessageBoxResult.Yes)
         {
+            return;
+        }
+
+        if (isEdgeUpdate)
+        {
+            try
+            {
+                SoftwareScanner.OpenMicrosoftEdgeUpdatePage();
+                StatusText.Text = "Opened Microsoft Edge's built-in update checker.";
+            }
+            catch (Exception exception)
+            {
+                StatusText.Text = "Could not open Microsoft Edge's update checker.";
+                MessageBox.Show(this, exception.Message, "Edge update error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+
             return;
         }
 
